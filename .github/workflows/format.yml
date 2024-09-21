@@ -10,8 +10,8 @@ jobs:
       uses: jidicula/clang-format-action@v4.13.0
       # uses: jidicula/clang-format-action@c74383674bf5f7c69f60ce562019c1c94bc1421a
       with:
-        clang-format-version: 13
+        clang-format-version: 14
         # The path to the directory you want to check for correct C/C++/Protobuf formatting. Default is the full repository.
         check-path: .
         exclude-regex: Makefile
-        fallback-style: mozilla
+        fallback-style: Mozilla
