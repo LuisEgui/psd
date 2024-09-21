@@ -1,39 +1,50 @@
 #include "game.h"
 
+/** Socket Error Constant */
+#define ERROR -1
+
+/** Server connections */
+#define SERVER_BACKLOG 10
+
 /**
  * Send a message to the player. This includes the length of the message and the message itself
  * @param socketClient Socket descriptor
  * @param message Message to be sent
  */
-void sendMessageToPlayer (int socketClient, char* message);
+void
+sendMessageToPlayer(int socketClient, char* message);
 
 /**
  * Receive a message from the player. This includes the length of the message and the message itself
  * @param socketClient Socket descriptor
  * @param message Message to be received
  */
-void receiveMessageFromPlayer (int socketClient, char* message);
+void
+receiveMessageFromPlayer(int socketClient, char* message);
 
 /**
  * Send a code to the player.
  * @param socketClient Socket descriptor
  * @param code Code to be send
  */
-void sendCodeToClient (int socketClient, unsigned int code);
+void
+sendCodeToClient(int socketClient, unsigned int code);
 
 /**
  * Send a board to the player.
  * @param socketClient Socket descriptor
  * @param board Board of the game
  */
-void sendBoardToClient (int socketClient, tBoard board);
+void
+sendBoardToClient(int socketClient, tBoard board);
 
 /**
  * Receive a move from the player.
  * @param socketClient Socket descriptor
  * @return Move performed by the player
  */
-unsigned int receiveMoveFromPlayer (int socketClient);
+unsigned int
+receiveMoveFromPlayer(int socketClient);
 
 /**
  * Get the associated socket to player
@@ -43,7 +54,8 @@ unsigned int receiveMoveFromPlayer (int socketClient);
  * @param player1socket Socket that connects with player 2
  * @return Associated socket to player
  */
-int getSocketPlayer (tPlayer player, int player1socket, int player2socket);
+int
+getSocketPlayer(tPlayer player, int player1socket, int player2socket);
 
 /**
  * Switch player
@@ -51,5 +63,13 @@ int getSocketPlayer (tPlayer player, int player1socket, int player2socket);
  * @param currentPlayer Current player
  * @return Rival player
  */
-tPlayer switchPlayer (tPlayer currentPlayer);
+tPlayer
+switchPlayer(tPlayer currentPlayer);
 
+/**
+ * Handles system calls and prints the error if needed.
+ * @param exp System call to be checked.
+ * @param msg Message to be printed if the system call fails.
+ */
+int
+check(int exp, const char* msg);

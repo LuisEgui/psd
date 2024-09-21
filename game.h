@@ -1,12 +1,12 @@
 #include "utils.h"
 
-
 /**
  * Init the board
  *
  * @param board Board of the game
  */
-void initBoard (tBoard board);
+void
+initBoard(tBoard board);
 
 /**
  * Check if a given move is valid
@@ -15,7 +15,8 @@ void initBoard (tBoard board);
  * @param column Number of the column where the chip is going to be inserted
  * @return Result of the current move
  */
-tMove checkMove (tBoard board, unsigned int column);
+tMove
+checkMove(tBoard board, unsigned int column);
 
 /**
  * Inserts a chip in the board
@@ -24,7 +25,8 @@ tMove checkMove (tBoard board, unsigned int column);
  * @param player Player that must move
  * @param column Column to insert the chip
  */
-void insertChip (tBoard board, tPlayer player, unsigned int column);
+void
+insertChip(tBoard board, tPlayer player, unsigned int column);
 
 /**
  * Check if a player is the winner
@@ -33,7 +35,8 @@ void insertChip (tBoard board, tPlayer player, unsigned int column);
  * @param player Player that has performed the last move
  * @return TRUE is player is the winner of FALSE in another case
  */
-int checkWinner (tBoard board, tPlayer player);
+int
+checkWinner(tBoard board, tPlayer player);
 
 /**
  * Check if the board is full
@@ -41,9 +44,5 @@ int checkWinner (tBoard board, tPlayer player);
  * @param board Board of the game
  * @return TRUE if the board is full or FALSE in another case
  */
-int isBoardFull (tBoard board);
-
-
-
-
-
+int
+isBoardFull(tBoard board);

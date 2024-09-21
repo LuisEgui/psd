@@ -1,14 +1,14 @@
-#include <stdio.h>
+#include <arpa/inet.h>
 #include <ctype.h>
+#include <netinet/in.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/socket.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 #include <time.h>
 #include <unistd.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <sys/stat.h>
-#include <arpa/inet.h>
 
 /** Board width (in number of cells) */
 #define BOARD_WIDTH 7
@@ -50,19 +50,28 @@
 #define STRING_LENGTH 128
 
 /** Board */
-typedef char tBoard [BOARD_WIDTH * BOARD_HEIGHT];
+typedef char tBoard[BOARD_WIDTH * BOARD_HEIGHT];
 
 /** Type for names, messages and this kind of variables */
-typedef char tString [STRING_LENGTH];
+typedef char tString[STRING_LENGTH];
 
 /** Players */
-typedef enum {player1, player2} tPlayer;
+typedef enum
+{
+  player1,
+  player2
+} tPlayer;
 
 /** Result for moves */
-typedef enum {OK_move, fullColumn_move} tMove;
+typedef enum
+{
+  OK_move,
+  fullColumn_move
+} tMove;
 
 // Thread parameters
-typedef struct threadArgs{
-    int socketPlayer1;
-    int socketPlayer2;
+typedef struct threadArgs
+{
+  int socketPlayer1;
+  int socketPlayer2;
 } tThreadArgs;

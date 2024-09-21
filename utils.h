@@ -5,7 +5,8 @@
  *
  * @param msg Error message
  */
-void showError(const char *msg);
+void
+showError(const char* msg);
 
 /**
  * Prints a board in the screen
@@ -13,4 +14,5 @@ void showError(const char *msg);
  * @param board	Board of current game
  * @param message Message with info about the game
  */
-void printBoard (tBoard board, char* message);
+void
+printBoard(tBoard board, char* message);

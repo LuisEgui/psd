@@ -5,7 +5,6 @@ EXECS = clientGame serverGame
 
 all: $(EXECS)
 
-
 clientGame: utils.o clientGame.o 
 	$(CC) utils.o clientGame.o -o clientGame
 
