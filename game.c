@@ -13,7 +13,6 @@ initBoard(tBoard board)
 tMove
 checkMove(tBoard board, unsigned int column)
 {
-
   tMove move;
 
   // Column is full

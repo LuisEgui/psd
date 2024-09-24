@@ -1,35 +1,59 @@
 #include "serverGame.h"
 #include <stdlib.h>
+#include <string.h>
 
 void
-sendMessageToPlayer(int socketClient, char* message)
+sendMessageToPlayer(int socket_client, char* message)
 {
+  unsigned int length = strlen(message);
+
+  // Send length of the message
+  check(send(socket_client, &length, length, 0), "ERROR while sending message length");
+
+  // Send the message
+  check(send(socket_client, message, length, 0), "ERROR while sending meesage to the player");
 }
 
 void
-receiveMessageFromPlayer(int socketClient, char* message)
+receiveMessageFromPlayer(int socket_client, char* message)
 {
+  unsigned int length;
+
+  // Receive length of the message
+  check(recv(socket_client, &length, sizeof(int), 0), "ERROR while receiving length of message");
+
+  memset(message, 0, length);
+
+  // Receive the message
+  check(recv(socket_client, message, length, 0), "ERROR while receiving message");
 }
 
 void
-sendCodeToClient(int socketClient, unsigned int code)
+sendCodeToClient(int socket_client, unsigned int code)
 {
+  check(send(socket_client, &code, sizeof(unsigned int), 0),
+        "ERROR while sending code to the player");
 }
 
 void
-sendBoardToClient(int socketClient, tBoard board)
+sendBoardToClient(int socket_client, tBoard board)
 {
+  check(send(socket_client, board, sizeof(tBoard), 0), "ERROR while sending board");
 }
 
 unsigned int
-receiveMoveFromPlayer(int socketClient)
+receiveMoveFromPlayer(int socket_client)
 {
+  unsigned int move;
+
+  check(recv(socket_client, &move, sizeof(unsigned int), 0), "ERROR while receiving move");
+
+  return move;
 }
 
 int
 getSocketPlayer(tPlayer player, int player1socket, int player2socket)
 {
-
   int socket;
 
   if (player == player1)
@@ -41,28 +65,50 @@ getSocketPlayer(tPlayer player, int player1socket, int player2socket)
 }
 
 tPlayer
-switchPlayer(tPlayer currentPlayer)
+switchPlayer(tPlayer current_player)
 {
+  tPlayer next_player;
 
-  tPlayer nextPlayer;
-
-  if (currentPlayer == player1)
-    nextPlayer = player2;
+  if (current_player == player1)
+    next_player = player2;
   else
-    nextPlayer = player1;
+    next_player = player1;
 
-  return nextPlayer;
+  return next_player;
 }
 
-int
-check(int exp, const char* msg)
+tPlayer
+randomizeStartingPlayer()
 {
-  if (exp == ERROR) {
-    perror(msg);
-    exit(1);
-  }
+  return rand() % 2 == 0 ? player1 : player2;
+}
 
-  return exp;
+void
+handleTurn(tPlayer current_player, tBoard board, int socket_p1, int socket_p2)
+{
+  // Send TURN_MOVE to the current player
+  sendCodeToClient(getSocketPlayer(current_player, socket_p1, socket_p2), TURN_MOVE);
+  // Send board to the current player
+  sendBoardToClient(getSocketPlayer(current_player, socket_p1, socket_p2), board);
+
+  // Send TURN_WAIT to the rival player
+  sendCodeToClient(getSocketPlayer(switchPlayer(current_player), socket_p1, socket_p2), TURN_WAIT);
+  // Send board to the rival player
+  sendBoardToClient(getSocketPlayer(switchPlayer(current_player), socket_p1, socket_p2), board);
+
+  // Receive move from the current player
+  unsigned int column =
+    receiveMoveFromPlayer(getSocketPlayer(current_player, socket_p1, socket_p2));
+
+  // Check if the movement is valid
+  if (checkMove(board, column) == OK_move)
+    insertChip(board, current_player, column);
+  else {
+    // Send a message to the player showing that the column is full
+    tString error_message;
+    sprintf(error_message, "Column %d is full, try another column.", column);
+    sendMessageToPlayer(getSocketPlayer(current_player, socket_p1, socket_p2), error_message);
+  }
 }
 
 int
@@ -131,6 +177,32 @@ main(int argc, char* argv[])
   printf("Connection accepted from %s:%d\n",
          inet_ntoa(player_two_addr.sin_addr),
          ntohs(player_two_addr.sin_port));
+
+  // Receive player 1 name
+  receiveMessageFromPlayer(socket_p1, player1_name);
+  printf("Name of player 1 received: %s\n", player1_name);
+
+  // Receive player 2 name
+  receiveMessageFromPlayer(socket_p2, player2_name);
+  printf("Name of player 2 received: %s\n", player2_name);
+
+  // Send player 1 name to player 2
+  sendMessageToPlayer(socket_p2, player1_name);
+
+  // Send player 2 name to player 1
+  sendMessageToPlayer(socket_p1, player2_name);
+
+  // Set the current player
+  current_player = randomizeStartingPlayer();
+
+  // Game logic
+  end_of_game = FALSE;
+
+  initBoard(board);
+
+  while (!end_of_game) {
+    handleTurn(current_player, board, socket_p1, socket_p2);
+  }
 
   close(socketfd);
   exit(EXIT_SUCCESS);

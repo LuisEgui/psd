@@ -7,6 +7,17 @@ showError(const char* msg)
   exit(0);
 }
 
+int
+check(int exp, const char* msg)
+{
+  if (exp == ERROR) {
+    perror(msg);
+    exit(1);
+  }
+
+  return exp;
+}
+
 void
 printBoard(tBoard board, char* message)
 {
