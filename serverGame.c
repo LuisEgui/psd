@@ -140,8 +140,6 @@ thread_function(void* args)
   tString player2_name;     /** Name of player 2 */
   int end_of_game;          /** Flag to control the end of the game*/
   tPlayer current_player;   /** Current player */
-  tString message;          /** Message to be sent to the players */
-
   socket_p1 = ((tThreadArgs*)args)->socketPlayer1;
   socket_p2 = ((tThreadArgs*)args)->socketPlayer2;
 
@@ -214,14 +212,6 @@ main(int argc, char* argv[])
   pthread_t thread;                   /** Thread */
   tThreadArgs* thread_args;           /** Thread arguments */
 
-  tBoard board;           /** Board of the game */
-  tPlayer current_player; /** Current player */
-  tMove move_result;      /** Result of player's move */
-  tString player1_name;   /** Name of player 1 */
-  tString player2_name;   /** Name of player 2 */
-  int end_of_game;        /** Flag to control the end of the game*/
-  unsigned int column;    /** Selected column to insert the chip */
-
   // Check arguments
   if (argc != 2) {
     fprintf(stderr, "ERROR wrong number of arguments\n");
@@ -270,7 +260,7 @@ main(int argc, char* argv[])
            inet_ntoa(player_two_addr.sin_addr),
            ntohs(player_two_addr.sin_port));
 
-    check(thread_args = (struct tThreadArgs*)malloc(sizeof(tThreadArgs)),
+    check((thread_args = (struct tThreadArgs*)malloc(sizeof(tThreadArgs))),
           "ERROR while allocating memory");
 
     thread_args->socketPlayer1 = socket_p1;
