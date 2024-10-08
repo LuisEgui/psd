@@ -3,6 +3,9 @@
 /** Server connections */
 #define SERVER_BACKLOG 10
 
+/** Server thread pool size */
+#define THREAD_POOL_SIZE 10
+
 /**
  * Send a message to the player. This includes the length of the message and the message itself
  * @param socket_client Socket descriptor

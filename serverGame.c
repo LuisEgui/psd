@@ -1,6 +1,12 @@
 #include "serverGame.h"
+#include <pthread.h>
 #include <stdlib.h>
 #include <string.h>
+
+void*
+thread_function(void* arg);
+
+pthread_t thread_pool[THREAD_POOL_SIZE]; /** Thread pool */
 
 void
 sendMessageToPlayer(int socket_client, char* message)
@@ -93,7 +99,6 @@ handleTurn(tPlayer current_player, tBoard board, int socket_p1, int socket_p2)
 {
   tString message;
 
-  printf("Sending TURN_MOVE to player %d\n", current_player);
   // Send TURN_MOVE to the current player
   sendCodeToClient(getSocketPlayer(current_player, socket_p1, socket_p2), TURN_MOVE);
   // Send board to the current player
@@ -126,71 +131,19 @@ handleTurn(tPlayer current_player, tBoard board, int socket_p1, int socket_p2)
   }
 }
 
-int
-main(int argc, char* argv[])
+void*
+thread_function(void* args)
 {
-  int socketfd;                       /** Socket descriptor */
-  struct sockaddr_in server_addr;     /** Server address structure */
-  unsigned int port;                  /** Listening port */
-  struct sockaddr_in player_one_addr; /** Client address structure for player 1 */
-  struct sockaddr_in player_two_addr; /** Client address structure for player 2 */
-  int socket_p1, socket_p2;           /** Socket descriptor for each player */
-  long unsigned int client_length;    /** Length of client structure */
+  int socket_p1, socket_p2; /** Socket descriptor for each player */
+  tBoard board;             /** Board of the game */
+  tString player1_name;     /** Name of player 1 */
+  tString player2_name;     /** Name of player 2 */
+  int end_of_game;          /** Flag to control the end of the game*/
+  tPlayer current_player;   /** Current player */
+  tString message;          /** Message to be sent to the players */
 
-  tBoard board;           /** Board of the game */
-  tPlayer current_player; /** Current player */
-  tMove move_result;      /** Result of player's move */
-  tString player1_name;   /** Name of player 1 */
-  tString player2_name;   /** Name of player 2 */
-  int end_of_game;        /** Flag to control the end of the game*/
-  unsigned int column;    /** Selected column to insert the chip */
-
-  // Check arguments
-  if (argc != 2) {
-    fprintf(stderr, "ERROR wrong number of arguments\n");
-    fprintf(stderr, "Usage:\n$>%s port\n", argv[0]);
-    exit(1);
-  }
-
-  // Get listening port
-  port = atoi(argv[1]);
-
-  // Seed
-  srand(time(0));
-
-  // Create server socket
-  check(socketfd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP), "ERROR while creating socket");
-
-  // Init server structure
-  memset(&server_addr, 0, sizeof(server_addr));
-
-  server_addr.sin_family = AF_INET;
-  server_addr.sin_addr.s_addr = htonl(INADDR_ANY);
-  server_addr.sin_port = htons(port);
-
-  // Bind
-  check(bind(socketfd, (struct sockaddr*)&server_addr, sizeof(server_addr)), "ERROR while binding");
-
-  // Listen
-  check(listen(socketfd, SERVER_BACKLOG), "ERROR while listening");
-
-  // Accept player 1
-  client_length = sizeof(player_one_addr);
-
-  check(socket_p1 =
-          accept(socketfd, (struct sockaddr*)&player_one_addr, (socklen_t*)&client_length),
-        "ERROR while accepting player 1");
-  printf("Connection accepted from %s:%d\n",
-         inet_ntoa(player_one_addr.sin_addr),
-         ntohs(player_one_addr.sin_port));
-
-  // Accept player 2
-  check(socket_p2 =
-          accept(socketfd, (struct sockaddr*)&player_two_addr, (socklen_t*)&client_length),
-        "ERROR while accepting player 2");
-  printf("Connection accepted from %s:%d\n",
-         inet_ntoa(player_two_addr.sin_addr),
-         ntohs(player_two_addr.sin_port));
+  socket_p1 = ((tThreadArgs*)args)->socketPlayer1;
+  socket_p2 = ((tThreadArgs*)args)->socketPlayer2;
 
   // Receive player 1 name
   receiveMessageFromPlayer(socket_p1, player1_name);
@@ -246,7 +199,89 @@ main(int argc, char* argv[])
       current_player = switchPlayer(current_player);
     }
   }
+}
 
+int
+main(int argc, char* argv[])
+{
+  int socketfd;                       /** Socket descriptor */
+  struct sockaddr_in server_addr;     /** Server address structure */
+  unsigned int port;                  /** Listening port */
+  struct sockaddr_in player_one_addr; /** Client address structure for player 1 */
+  struct sockaddr_in player_two_addr; /** Client address structure for player 2 */
+  int socket_p1, socket_p2;           /** Socket descriptor for each player */
+  long unsigned int client_length;    /** Length of client structure */
+  pthread_t thread;                   /** Thread */
+  tThreadArgs* thread_args;           /** Thread arguments */
+
+  tBoard board;           /** Board of the game */
+  tPlayer current_player; /** Current player */
+  tMove move_result;      /** Result of player's move */
+  tString player1_name;   /** Name of player 1 */
+  tString player2_name;   /** Name of player 2 */
+  int end_of_game;        /** Flag to control the end of the game*/
+  unsigned int column;    /** Selected column to insert the chip */
+
+  // Check arguments
+  if (argc != 2) {
+    fprintf(stderr, "ERROR wrong number of arguments\n");
+    fprintf(stderr, "Usage:\n$>%s port\n", argv[0]);
+    exit(1);
+  }
+
+  // Get listening port
+  port = atoi(argv[1]);
+
+  // Seed
+  srand(time(0));
+
+  // Create server socket
+  check(socketfd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP), "ERROR while creating socket");
+
+  // Init server structure
+  memset(&server_addr, 0, sizeof(server_addr));
+
+  server_addr.sin_family = AF_INET;
+  server_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+  server_addr.sin_port = htons(port);
+
+  // Bind
+  check(bind(socketfd, (struct sockaddr*)&server_addr, sizeof(server_addr)), "ERROR while binding");
+
+  // Listen
+  check(listen(socketfd, SERVER_BACKLOG), "ERROR while listening");
+
+  while (TRUE) {
+    // Accept player 1
+    client_length = sizeof(player_one_addr);
+
+    check(socket_p1 =
+            accept(socketfd, (struct sockaddr*)&player_one_addr, (socklen_t*)&client_length),
+          "ERROR while accepting player 1");
+    printf("Connection accepted from %s:%d\n",
+           inet_ntoa(player_one_addr.sin_addr),
+           ntohs(player_one_addr.sin_port));
+
+    // Accept player 2
+    check(socket_p2 =
+            accept(socketfd, (struct sockaddr*)&player_two_addr, (socklen_t*)&client_length),
+          "ERROR while accepting player 2");
+    printf("Connection accepted from %s:%d\n",
+           inet_ntoa(player_two_addr.sin_addr),
+           ntohs(player_two_addr.sin_port));
+
+    check(thread_args = (struct tThreadArgs*)malloc(sizeof(tThreadArgs)),
+          "ERROR while allocating memory");
+
+    thread_args->socketPlayer1 = socket_p1;
+    thread_args->socketPlayer2 = socket_p2;
+
+    // Create a thread
+    check(pthread_create(&thread, NULL, thread_function, (void*)thread_args),
+          "ERROR while creating thread");
+  }
+
+  free(thread_args);
   close(socketfd);
   exit(EXIT_SUCCESS);
 }
