@@ -5,13 +5,13 @@
 void
 sendMessageToPlayer(int socket_client, char* message)
 {
-  unsigned int length = strlen(message);
+  unsigned int length = strlen(message) + 1;
 
   // Send length of the message
-  check(send(socket_client, &length, length, 0), "ERROR while sending message length");
+  check(send(socket_client, &length, sizeof(length), 0), "ERROR while sending message length");
 
   // Send the message
-  check(send(socket_client, message, length, 0), "ERROR while sending meesage to the player");
+  check(send(socket_client, message, length, 0), "ERROR while sending message to the player");
 }
 
 void
@@ -20,7 +20,7 @@ receiveMessageFromPlayer(int socket_client, char* message)
   unsigned int length;
 
   // Receive length of the message
-  check(recv(socket_client, &length, sizeof(int), 0), "ERROR while receiving length of message");
+  check(recv(socket_client, &length, sizeof(length), 0), "ERROR while receiving length of message");
 
   memset(message, 0, length);
 
@@ -31,7 +31,7 @@ receiveMessageFromPlayer(int socket_client, char* message)
 void
 sendCodeToClient(int socket_client, unsigned int code)
 {
-  check(send(socket_client, &code, sizeof(unsigned int), 0),
+  check(send(socket_client, &code, sizeof(code), 0),
         "ERROR while sending code to the player");
 }
 
@@ -46,7 +46,7 @@ receiveMoveFromPlayer(int socket_client)
 {
   unsigned int move;
 
-  check(recv(socket_client, &move, sizeof(unsigned int), 0), "ERROR while receiving move");
+  check(recv(socket_client, &move, sizeof(move), 0), "ERROR while receiving move");
 
   return move;
 }
@@ -83,18 +83,32 @@ randomizeStartingPlayer()
   return rand() % 2 == 0 ? player1 : player2;
 }
 
+char
+getPlayerChip(tPlayer current_player)
+{
+  return current_player == player1 ? PLAYER_1_CHIP : PLAYER_2_CHIP;
+}
+
 void
 handleTurn(tPlayer current_player, tBoard board, int socket_p1, int socket_p2)
 {
+  tString message;
+
+  printf("Sending TURN_MOVE to player %d\n", current_player);
   // Send TURN_MOVE to the current player
   sendCodeToClient(getSocketPlayer(current_player, socket_p1, socket_p2), TURN_MOVE);
   // Send board to the current player
   sendBoardToClient(getSocketPlayer(current_player, socket_p1, socket_p2), board);
+  // Send player turn and chip to the current player
+  sprintf(message, "Its your turn, you play with: %c", getPlayerChip(current_player));
+  sendMessageToPlayer(getSocketPlayer(current_player, socket_p1, socket_p2), message);
 
   // Send TURN_WAIT to the rival player
   sendCodeToClient(getSocketPlayer(switchPlayer(current_player), socket_p1, socket_p2), TURN_WAIT);
   // Send board to the rival player
   sendBoardToClient(getSocketPlayer(switchPlayer(current_player), socket_p1, socket_p2), board);
+  sprintf(message, "Your rival is thinking... please, wait! You play with: %c", getPlayerChip(switchPlayer(current_player)));
+  sendMessageToPlayer(getSocketPlayer(switchPlayer(current_player), socket_p1, socket_p2), message);
 
   // Receive move from the current player
   unsigned int column =
@@ -129,7 +143,6 @@ main(int argc, char* argv[])
   tString player2_name;   /** Name of player 2 */
   int end_of_game;        /** Flag to control the end of the game*/
   unsigned int column;    /** Selected column to insert the chip */
-  tString message;        /** Message sent to the players */
 
   // Check arguments
   if (argc != 2) {
@@ -202,6 +215,35 @@ main(int argc, char* argv[])
 
   while (!end_of_game) {
     handleTurn(current_player, board, socket_p1, socket_p2);
+
+    // Check if current player wins or if the board is actually full
+    if (checkWinner(board, current_player)) {
+      // Send GAMEOVER_WIN to the current player
+      sendCodeToClient(getSocketPlayer(current_player, socket_p1, socket_p2), GAMEOVER_WIN);
+      // Send board to the current player
+      sendBoardToClient(getSocketPlayer(current_player, socket_p1, socket_p2), board);
+
+      // Send GAMEOVER_LOSE to the rival player
+      sendCodeToClient(getSocketPlayer(switchPlayer(current_player), socket_p1, socket_p2),
+                       GAMEOVER_LOSE);
+      sendBoardToClient(getSocketPlayer(switchPlayer(current_player), socket_p1, socket_p2), board);
+
+      end_of_game = TRUE;
+
+    } else if (isBoardFull(board)) {
+      // Send GAMEOVER_TIE to both players
+      sendCodeToClient(socket_p1, GAMEOVER_DRAW);
+      sendCodeToClient(socket_p2, GAMEOVER_DRAW);
+
+      // Send board to both players
+      sendBoardToClient(socket_p1, board);
+      sendBoardToClient(socket_p2, board);
+
+      end_of_game = TRUE;
+    } else {
+      // Switch to the next player
+      current_player = switchPlayer(current_player);
+    }
   }
 
   close(socketfd);

@@ -3,13 +3,13 @@
 void
 sendMessageToServer(int socketServer, char* message)
 {
-  unsigned int length = strlen(message);
+  unsigned int length = strlen(message) + 1;
 
   // Send length of the message
-  check(send(socketServer, &length, length, 0), "ERROR while sending message length");
+  check(send(socketServer, &length, sizeof(length), 0), "ERROR while sending message length");
 
   // Send the message
-  check(send(socketServer, message, length, 0), "ERROR while sending meesage to the server");
+  check(send(socketServer, message, length, 0), "ERROR while sending message to the server");
 }
 
 void
@@ -35,9 +35,9 @@ receiveBoard(int socketServer, tBoard board)
 unsigned int
 receiveCode(int socketServer)
 {
-  unsigned int code = ERROR;
+  unsigned int code;
 
-  check(send(socketServer, &code, sizeof(unsigned int), 0),
+  check(recv(socketServer, &code, sizeof(unsigned int), 0),
         "ERROR while sending code to the server");
 
   return code;
@@ -93,6 +93,8 @@ readMove()
 void
 sendMoveToServer(int socketServer, unsigned int move)
 {
+  check(send(socketServer, &move, sizeof(move), 0),
+        "ERROR while sending move to the server");
 }
 
 int
@@ -164,6 +166,52 @@ main(int argc, char* argv[])
   printf("Game starts!\n\n");
 
   // While game continues...
+  while (!end_of_game) {
+    // Receive code from server
+    code = receiveCode(socketfd);
+
+    switch (code) {
+      case TURN_MOVE:
+        // Receive and show the board
+        receiveBoard(socketfd, board);
+        receiveMessageFromServer(socketfd, message);
+        printBoard(board, message);
+
+        // Read and send move to server
+        column = readMove();
+        sendMoveToServer(socketfd, column);
+        break;
+
+      case TURN_WAIT:
+        // Show the board and a waiting message
+        receiveBoard(socketfd, board);
+        receiveMessageFromServer(socketfd, message);
+        printBoard(board, message);
+        break;
+
+      case GAMEOVER_WIN:
+        // Receive and show the board and a congrats message
+        receiveBoard(socketfd, board);
+        printBoard(board, "Congratulations, you won!");
+        end_of_game = TRUE;
+        break;
+
+      case GAMEOVER_LOSE:
+        receiveBoard(socketfd, board);
+        printBoard(board, "You lose! Better luck next time!");
+        end_of_game = TRUE;
+        break;
+      
+      case GAMEOVER_DRAW:
+        receiveBoard(socketfd, board);
+        printBoard(board, "It's a draw!");
+        end_of_game = TRUE;
+        break;
+    }
+  }
 
   // Close socket
+  close(socketfd);
+
+  exit(EXIT_SUCCESS);
 }

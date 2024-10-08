@@ -71,7 +71,19 @@ tPlayer
 randomize_starting_player();
 
 /**
- *
+ * Handle the turn of the player
+ * @param current_player Current player
+ * @param board Board of the game
+ * @param socket_p1 Socket for player 1
+ * @param socket_p2 Socket for player 2
  */
 void
 handleTurn(tPlayer current_player, tBoard board, int socket_p1, int socket_p2);
+
+/**
+ * Get the chip of the player
+ * @param current_player Current player
+ * @return Chip of the player
+ */
+char
+getPlayerChip(tPlayer current_player);
