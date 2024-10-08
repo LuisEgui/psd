@@ -31,8 +31,7 @@ receiveMessageFromPlayer(int socket_client, char* message)
 void
 sendCodeToClient(int socket_client, unsigned int code)
 {
-  check(send(socket_client, &code, sizeof(code), 0),
-        "ERROR while sending code to the player");
+  check(send(socket_client, &code, sizeof(code), 0), "ERROR while sending code to the player");
 }
 
 void
@@ -107,7 +106,9 @@ handleTurn(tPlayer current_player, tBoard board, int socket_p1, int socket_p2)
   sendCodeToClient(getSocketPlayer(switchPlayer(current_player), socket_p1, socket_p2), TURN_WAIT);
   // Send board to the rival player
   sendBoardToClient(getSocketPlayer(switchPlayer(current_player), socket_p1, socket_p2), board);
-  sprintf(message, "Your rival is thinking... please, wait! You play with: %c", getPlayerChip(switchPlayer(current_player)));
+  sprintf(message,
+          "Your rival is thinking... please, wait! You play with: %c",
+          getPlayerChip(switchPlayer(current_player)));
   sendMessageToPlayer(getSocketPlayer(switchPlayer(current_player), socket_p1, socket_p2), message);
 
   // Receive move from the current player

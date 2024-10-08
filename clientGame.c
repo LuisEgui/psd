@@ -93,8 +93,7 @@ readMove()
 void
 sendMoveToServer(int socketServer, unsigned int move)
 {
-  check(send(socketServer, &move, sizeof(move), 0),
-        "ERROR while sending move to the server");
+  check(send(socketServer, &move, sizeof(move), 0), "ERROR while sending move to the server");
 }
 
 int
@@ -201,7 +200,7 @@ main(int argc, char* argv[])
         printBoard(board, "You lose! Better luck next time!");
         end_of_game = TRUE;
         break;
-      
+
       case GAMEOVER_DRAW:
         receiveBoard(socketfd, board);
         printBoard(board, "It's a draw!");
