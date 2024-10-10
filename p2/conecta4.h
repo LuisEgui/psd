@@ -1,8 +1,8 @@
-//gsoap conecta4ns service name: conecta4
-//gsoap conecta4ns service style: rpc
-//gsoap conecta4ns service location: http//localhost:10000
-//gsoap conecta4ns service encoding: encoded
-//gsoap conecta4ns service namespace: urn:conecta4ns
+// gsoap conecta4ns service name: conecta4
+// gsoap conecta4ns service style: rpc
+// gsoap conecta4ns service location: http//localhost:10000
+// gsoap conecta4ns service encoding: encoded
+// gsoap conecta4ns service namespace: urn:conecta4ns
 
 /** Server is full. No more games are allowed */
 #define ERROR_SERVER_FULL -1000
@@ -56,28 +56,39 @@
 #define STRING_LENGTH 128
 
 /** Players */
-typedef enum players {player1, player2} conecta4ns__tPlayer;
+typedef enum players
+{
+  player1,
+  player2
+} conecta4ns__tPlayer;
 
 /** Result for moves */
-typedef enum moves {OK_move, fullColumn_move} conecta4ns__tMove;
+typedef enum moves
+{
+  OK_move,
+  fullColumn_move
+} conecta4ns__tMove;
 
 /** Dynamic array of chars */
-typedef char *xsd__string;
+typedef char* xsd__string;
 
 /** Message used to send the player's name and messages sent from server */
-typedef struct tMessage{
-	int __size;
-	xsd__string msg;
-}conecta4ns__tMessage;
+typedef struct tMessage
+{
+  int __size;
+  xsd__string msg;
+} conecta4ns__tMessage;
 
 /** Response from the server */
-typedef struct tBlock{
-	int code;
-	conecta4ns__tMessage msgStruct;
-	int __size;
-	xsd__string board;
-}conecta4ns__tBlock;
+typedef struct tBlock
+{
+  int code;
+  conecta4ns__tMessage msgStruct;
+  int __size;
+  xsd__string board;
+} conecta4ns__tBlock;
 
-int conecta4ns__register  	(conecta4ns__tMessage playerName, int *code);
-int conecta4ns__getStatus 	(conecta4ns__tMessage playerName, int gameId, conecta4ns__tBlock* status);
-
+int
+conecta4ns__register(conecta4ns__tMessage playerName, int* code);
+int
+conecta4ns__getStatus(conecta4ns__tMessage playerName, int gameId, conecta4ns__tBlock* status);
