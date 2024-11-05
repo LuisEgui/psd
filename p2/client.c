@@ -102,23 +102,24 @@ main(int argc, char** argv)
   res_code = -1;
   end_of_game = FALSE;
 
-  // Get player name
-  printf("Enter your name: ");
-  fgets(player_name.msg, STRING_LENGTH - 1, stdin);
+  do {
+    // Get player name
+    printf("Enter your name: ");
+    fgets(player_name.msg, STRING_LENGTH - 1, stdin);
 
-  // Remove '\n'
-  player_name.msg[strlen(player_name.msg) - 1] = 0;
-  player_name.__size = strlen(player_name.msg);
+    // Remove '\n'
+    player_name.msg[strlen(player_name.msg) - 1] = 0;
+    player_name.__size = strlen(player_name.msg);
 
-  res_code = soap_call_conecta4ns__register(&soap, server_url, "", player_name, &game_status);
+    res_code = soap_call_conecta4ns__register(&soap, server_url, "", player_name, &game_status);
 
-  if (game_status.code == ERROR_SERVER_FULL) {
-    printf("Server is full. Try again later.\n");
-    exit(1);
-  } else if (game_status.code == ERROR_PLAYER_REPEATED) {
-    printf("Player %s is already registered. Try with a different name.\n", player_name.msg);
-    exit(1);
-  }
+    if (game_status.code == ERROR_SERVER_FULL) {
+      printf("Server is full. Try again later.\n");
+      exit(1);
+    } else if (game_status.code == ERROR_PLAYER_REPEATED) {
+      printf("Player %s is already registered. Try with a different name.\n", player_name.msg);
+    }
+  } while (game_status.code == ERROR_PLAYER_REPEATED);
 
   printf("Connected to server. Game ID: %d\n", game_status.code);
 
