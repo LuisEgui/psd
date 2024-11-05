@@ -1,4 +1,4 @@
-#include "conecta4.nsmap"
+#include "conecta4ns.nsmap"
 #include "game.h"
 #include "soapH.h"
 

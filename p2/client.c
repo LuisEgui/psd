@@ -1,4 +1,5 @@
 #include "client.h"
+#include "soapH.h"
 
 #define DEBUG_CLIENT 1
 
@@ -11,6 +12,12 @@ readMove()
 
   // Init...
   enteredMove = (xsd__string)malloc(STRING_LENGTH);
+
+  if (enteredMove == NULL) {
+    perror("Error allocating memory for entered move\n");
+    exit(1);
+  }
+
   memset(enteredMove, 0, STRING_LENGTH);
   isRightMove = FALSE;
   move = STRING_LENGTH;
@@ -56,43 +63,73 @@ readMove()
 int
 main(int argc, char** argv)
 {
-
-  struct soap soap;                /** Soap struct */
-  char* serverURL;                 /** Server URL */
-  unsigned int endOfGame;          /** Flag to control the end of the game */
-  conecta4ns__tMessage playerName; /** Player name */
-  conecta4ns__tBlock gameStatus;   /** Game status */
-  unsigned int playerMove;         /** Player move */
-  int resCode;                     /** Return code from server */
+  struct soap soap;                 /** Soap struct */
+  char* server_url;                 /** Server URL */
+  unsigned int end_of_game;         /** Flag to control the end of the game */
+  conecta4ns__tMessage player_name; /** Player name */
+  conecta4ns__tBlock game_status;   /** Game status */
+  unsigned int player_move;         /** Player move */
+  int res_code;                     /** Return code from server */
+  int game_id;                      /** Game ID */
 
   // Init gSOAP environment
   soap_init(&soap);
 
-  // Obtain server address
-  serverURL = argv[1];
-
-  // Allocate memory for player name and init
-  playerName.msg = (xsd__string)malloc(STRING_LENGTH);
-  memset(playerName.msg, 0, STRING_LENGTH);
-
-  // Allocate memory for game status and init
-  allocClearBlock(&soap, &gameStatus);
-
-  // Init
-  resCode = -1;
-  endOfGame = FALSE;
-  gameStatus.code = 0;
-
-  // Check arguments
+  // Check arguments!
   if (argc != 2) {
-    printf("Usage: %s http://server:port\n", argv[0]);
+    fprintf(stderr, "ERROR wrong number of arguments\n");
+    fprintf(stderr, "Usage:\n$>%s http://localhost:port\n", argv[0]);
     exit(0);
   }
+
+  // Obtain server address
+  server_url = argv[1];
+
+  // Allocate memory for player name and init
+  player_name.msg = (xsd__string)malloc(STRING_LENGTH);
+
+  if (player_name.msg == NULL) {
+    perror("Error allocating memory for player name\n");
+    exit(1);
+  }
+
+  memset(player_name.msg, 0, STRING_LENGTH);
+
+  // Allocate memory for game status and init
+  allocClearBlock(&soap, &game_status);
+
+  // Init
+  res_code = -1;
+  end_of_game = FALSE;
+
+  // Get player name
+  printf("Enter your name: ");
+  fgets(player_name.msg, STRING_LENGTH - 1, stdin);
+
+  // Remove '\n'
+  player_name.msg[strlen(player_name.msg) - 1] = 0;
+  player_name.__size = strlen(player_name.msg);
+
+  res_code = soap_call_conecta4ns__register(&soap, server_url, "", player_name, &game_status);
+
+  if (game_status.code == ERROR_SERVER_FULL) {
+    printf("Server is full. Try again later.\n");
+    exit(1);
+  } else if (game_status.code == ERROR_PLAYER_REPEATED) {
+    printf("Player %s is already registered. Try with a different name.\n", player_name.msg);
+    exit(1);
+  }
+
+  printf("Connected to server. Game ID: %d\n", game_status.code);
+
+  while (TRUE)
+    ;
 
   // Clean the environment
   soap_destroy(&soap);
   soap_end(&soap);
   soap_done(&soap);
+  free(player_name.msg);
 
   return 0;
 }

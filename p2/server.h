@@ -1,4 +1,4 @@
-#include "conecta4.nsmap"
+#include "conecta4ns.nsmap"
 #include "game.h"
 #include "soapH.h"
 #include <pthread.h>
@@ -19,16 +19,13 @@ typedef enum
  */
 typedef struct game
 {
-
   xsd__string board;                 /** Board of the game */
   conecta4ns__tPlayer currentPlayer; /** Current player */
   xsd__string player1Name;           /** Name of player 1 */
   xsd__string player2Name;           /** Name of player 2 */
   int endOfGame;                     /** Flag to control the end of the game*/
   tGameState status;                 /** Flag to indicate the status of this game */
-
-  // Mutex and condition variable here!!!
-
+  pthread_mutex_t mutex;             /** Mutex to protect the game status field */
 } tGame;
 
 /**

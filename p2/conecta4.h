@@ -89,6 +89,6 @@ typedef struct tBlock
 } conecta4ns__tBlock;
 
 int
-conecta4ns__register(conecta4ns__tMessage playerName, int* code);
+conecta4ns__register(conecta4ns__tMessage playerName, conecta4ns__tBlock* game_status);
 int
 conecta4ns__getStatus(conecta4ns__tMessage playerName, int gameId, conecta4ns__tBlock* status);
