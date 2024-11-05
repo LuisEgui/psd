@@ -7,8 +7,8 @@
 /** Array with games */
 tGame games[MAX_GAMES];
 
-/** Mutex to protect the game status field in the array of games */
-pthread_mutex_t mutex_status_array;
+/** Mutex to protect the array of games */
+pthread_mutex_t mutex_games;
 
 void
 initServerStructures()
@@ -152,12 +152,9 @@ conecta4ns__register(struct soap* soap,
   if (DEBUG_SERVER)
     printf("[Register] Registering new player -> [%s]\n", playerName.msg);
 
-  // Search for an empty game
-  pthread_mutex_lock(&mutex_status_array);
   game_index = searchEmptyGame();
 
   if (game_index == ERROR_SERVER_FULL) {
-    pthread_mutex_unlock(&mutex_status_array);
     if (DEBUG_SERVER)
       printf("Server is full\n");
     game_status->code = ERROR_SERVER_FULL;
@@ -166,12 +163,14 @@ conecta4ns__register(struct soap* soap,
 
   // Check if the player name is already registered in the game
   if (checkPlayer(playerName.msg, game_index)) {
-    pthread_mutex_unlock(&mutex_status_array);
     if (DEBUG_SERVER)
       printf("Player %s is already registered in game %d\n", playerName.msg, game_index);
     game_status->code = ERROR_PLAYER_REPEATED;
     return SOAP_OK;
   }
+
+  // Lock the status array to avoid race conditions
+  pthread_mutex_lock(&mutex_games);
 
   // Register the player
   if (strlen(games[game_index].player1Name) == 0) {
@@ -198,7 +197,7 @@ conecta4ns__register(struct soap* soap,
       printf("Game %d is ready to start\n", game_index);
   }
 
-  pthread_mutex_unlock(&mutex_status_array);
+  pthread_mutex_unlock(&mutex_games);
 
   game_status->code = game_index;
 
@@ -262,7 +261,7 @@ main(int argc, char** argv)
   soap.max_keep_alive = 100;  // max keep-alive sequence
 
   initServerStructures();
-  pthread_mutex_init(&mutex_status_array, NULL);
+  pthread_mutex_init(&mutex_games, NULL);
 
   // Get listening port
   port = atoi(argv[1]);
