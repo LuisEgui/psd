@@ -14,7 +14,7 @@ void
 initServerStructures()
 {
   if (DEBUG_SERVER)
-    printf("Initializing...\n");
+    printf("[Server init] Initializing...\n");
 
   // Init seed
   srand(time(NULL));
@@ -26,7 +26,7 @@ initServerStructures()
     games[i].board = (xsd__string)malloc(BOARD_WIDTH * BOARD_HEIGHT);
 
     if (games[i].board == NULL) {
-      perror("Error allocating memory for board\n");
+      perror("[Server init] Error allocating memory for board\n");
       exit(1);
     }
 
@@ -42,14 +42,14 @@ initServerStructures()
     games[i].player1Name = (xsd__string)malloc(STRING_LENGTH);
 
     if (games[i].player1Name == NULL) {
-      perror("Error allocating memory for player1Name\n");
+      perror("[Server init] Error allocating memory for player1Name\n");
       exit(1);
     }
 
     games[i].player2Name = (xsd__string)malloc(STRING_LENGTH);
 
     if (games[i].player2Name == NULL) {
-      perror("Error allocating memory for player2Name\n");
+      perror("[Server init] Error allocating memory for player2Name\n");
       exit(1);
     }
 
@@ -156,7 +156,7 @@ conecta4ns__register(struct soap* soap,
 
   if (game_index == ERROR_SERVER_FULL) {
     if (DEBUG_SERVER)
-      printf("Server is full\n");
+      printf("[Register] Server is full\n");
     game_status->code = ERROR_SERVER_FULL;
     return SOAP_OK;
   }
@@ -164,7 +164,7 @@ conecta4ns__register(struct soap* soap,
   // Check if the player name is already registered in the game
   if (checkPlayer(playerName.msg, game_index)) {
     if (DEBUG_SERVER)
-      printf("Player %s is already registered in game %d\n", playerName.msg, game_index);
+      printf("[Register] Player %s is already registered in game %d\n", playerName.msg, game_index);
     game_status->code = ERROR_PLAYER_REPEATED;
     return SOAP_OK;
   }
@@ -179,7 +179,8 @@ conecta4ns__register(struct soap* soap,
     games[game_index].status = gameWaitingPlayer;
 
     if (DEBUG_SERVER)
-      printf("Player %s registered in game %d\n", games[game_index].player1Name, game_index);
+      printf(
+        "[Register] Player %s registered in game %d\n", games[game_index].player1Name, game_index);
 
   } else if (strlen(games[game_index].player2Name) == 0) {
     strncpy(games[game_index].player2Name, playerName.msg, playerName.__size);
@@ -187,14 +188,15 @@ conecta4ns__register(struct soap* soap,
     games[game_index].status = gameWaitingPlayer;
 
     if (DEBUG_SERVER)
-      printf("Player %s registered in game %d\n", games[game_index].player2Name, game_index);
+      printf(
+        "[Register] Player %s registered in game %d\n", games[game_index].player2Name, game_index);
   }
 
   // Check if the game is ready to start
   if (strlen(games[game_index].player1Name) > 0 && strlen(games[game_index].player2Name) > 0) {
     games[game_index].status = gameReady;
     if (DEBUG_SERVER)
-      printf("Game %d is ready to start\n", game_index);
+      printf("[Register] Game %d is ready to start\n", game_index);
   }
 
   pthread_mutex_unlock(&mutex_games);
@@ -217,7 +219,7 @@ conecta4ns__getStatus(struct soap* soap,
   allocClearBlock(soap, status);
 
   if (DEBUG_SERVER)
-    printf("Receiving getStatus() request from -> %s [%d] in game %d\n",
+    printf("[GetStatus] Receiving getStatus() request from -> %s [%d] in game %d\n",
            playerName.msg,
            playerName.__size,
            gameId);
@@ -229,9 +231,6 @@ void*
 processRequest(void* soap)
 {
   pthread_detach(pthread_self());
-
-  if (DEBUG_SERVER)
-    printf("Processing a new request...");
 
   soap_serve((struct soap*)soap);
   soap_destroy((struct soap*)soap);
@@ -273,7 +272,7 @@ main(int argc, char** argv)
     exit(1);
   }
 
-  printf("Server is ON ...\n");
+  printf("[Server init] Server is ON ...\n");
 
   while (TRUE) {
 
