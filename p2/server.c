@@ -152,6 +152,9 @@ conecta4ns__register(struct soap* soap,
   if (DEBUG_SERVER)
     printf("[Register] Registering new player -> [%s]\n", playerName.msg);
 
+  // Lock the status array to avoid race conditions
+  pthread_mutex_lock(&mutex_games);
+
   game_index = searchEmptyGame();
 
   if (game_index == ERROR_SERVER_FULL) {
@@ -168,9 +171,6 @@ conecta4ns__register(struct soap* soap,
     game_status->code = ERROR_PLAYER_REPEATED;
     return SOAP_OK;
   }
-
-  // Lock the status array to avoid race conditions
-  pthread_mutex_lock(&mutex_games);
 
   // Register the player
   if (strlen(games[game_index].player1Name) == 0) {
