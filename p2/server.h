@@ -26,6 +26,7 @@ typedef struct game
   int endOfGame;                     /** Flag to control the end of the game*/
   tGameState status;                 /** Flag to indicate the status of this game */
   pthread_mutex_t mutex;             /** Mutex to protect the game status field */
+  pthread_cond_t game_ready;         /** Condition variable to signal that the game is ready */
 } tGame;
 
 /**
@@ -42,6 +43,22 @@ initServerStructures();
  */
 conecta4ns__tPlayer
 switchPlayer(conecta4ns__tPlayer currentPlayer);
+
+/**
+ * Checks if a game is empty
+ * @param game_id ID of the game
+ * @return TRUE if the game is empty, or FALSE in another case.
+ */
+int
+is_empty(int game_id);
+
+/**
+ * Checks if a game is waiting for a player
+ * @param game_id ID of the game
+ * @return TRUE if the game is waiting for a player, or FALSE in another case.
+ */
+int
+is_waiting_player(int game_id);
 
 /**
  * Search for a game.

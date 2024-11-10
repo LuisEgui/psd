@@ -1,14 +1,12 @@
 #include "server.h"
 #include "soapStub.h"
+#include <assert.h>
 
 /** Flag to enable debugging */
 #define DEBUG_SERVER 1
 
 /** Array with games */
 tGame games[MAX_GAMES];
-
-/** Mutex to protect the array of games */
-pthread_mutex_t mutex_games;
 
 void
 initServerStructures()
@@ -62,6 +60,7 @@ initServerStructures()
 
     // Init mutex and cond variable
     pthread_mutex_init(&games[i].mutex, NULL);
+    pthread_cond_init(&games[i].game_ready, NULL);
   }
 }
 
@@ -72,12 +71,24 @@ switchPlayer(conecta4ns__tPlayer currentPlayer)
 }
 
 int
+is_empty(int game_id)
+{
+  return games[game_id].status == gameEmpty;
+}
+
+int
+is_waiting_player(int game_id)
+{
+  return games[game_id].status == gameWaitingPlayer;
+}
+
+int
 searchEmptyGame()
 {
   int game_index = ERROR_SERVER_FULL;
 
   for (int i = 0; i < MAX_GAMES; i++) {
-    if (games[i].status == gameEmpty || games[i].status == gameWaitingPlayer) {
+    if (is_waiting_player(i) || is_empty(i)) {
       game_index = i;
       break;
     }
@@ -144,66 +155,74 @@ conecta4ns__register(struct soap* soap,
                      conecta4ns__tMessage playerName,
                      conecta4ns__tBlock* game_status)
 {
-  int game_index = -1;
+  while (1) {
+    int game_index = -1;
 
-  // Set \0 at the end of the string
-  playerName.msg[playerName.__size] = 0;
+    // Set \0 at the end of the string
+    playerName.msg[playerName.__size] = 0;
 
-  if (DEBUG_SERVER)
-    printf("[Register] Registering new player -> [%s]\n", playerName.msg);
-
-  // Lock the status array to avoid race conditions
-  pthread_mutex_lock(&mutex_games);
-
-  game_index = searchEmptyGame();
-
-  if (game_index == ERROR_SERVER_FULL) {
     if (DEBUG_SERVER)
-      printf("[Register] Server is full\n");
-    game_status->code = ERROR_SERVER_FULL;
-    return SOAP_OK;
+      printf("[Register] Registering new player -> [%s]\n", playerName.msg);
+
+    game_index = searchEmptyGame();
+
+    if (game_index == ERROR_SERVER_FULL) {
+      if (DEBUG_SERVER)
+        printf("[Register] Server is full\n");
+      game_status->code = ERROR_SERVER_FULL;
+      return SOAP_OK;
+    }
+
+    // Check if the player name is already registered in the game
+    if (checkPlayer(playerName.msg, game_index)) {
+      if (DEBUG_SERVER)
+        printf(
+          "[Register] Player %s is already registered in game %d\n", playerName.msg, game_index);
+      game_status->code = ERROR_PLAYER_REPEATED;
+      return SOAP_OK;
+    }
+
+    pthread_mutex_lock(&games[game_index].mutex);
+
+    // Register the player
+    if (is_empty(game_index)) {
+      assert(strlen(games[game_index].player1Name) == 0);
+      strncpy(games[game_index].player1Name, playerName.msg, playerName.__size);
+      games[game_index].player1Name[playerName.__size] = '\0';
+      games[game_index].status = gameWaitingPlayer;
+
+      if (DEBUG_SERVER)
+        printf("[Register] Player %s registered in game %d\n",
+               games[game_index].player1Name,
+               game_index);
+
+      pthread_cond_wait(&games[game_index].game_ready, &games[game_index].mutex);
+      pthread_mutex_unlock(&games[game_index].mutex);
+      game_status->code = game_index;
+      return SOAP_OK;
+
+    } else if (is_waiting_player(game_index)) {
+      assert(strlen(games[game_index].player2Name) == 0);
+      strncpy(games[game_index].player2Name, playerName.msg, playerName.__size);
+      games[game_index].player2Name[playerName.__size] = '\0';
+
+      if (DEBUG_SERVER)
+        printf("[Register] Player %s registered in game %d\n",
+               games[game_index].player2Name,
+               game_index);
+
+      games[game_index].status = gameReady;
+
+      if (DEBUG_SERVER)
+        printf("[Register] Game %d is ready to start\n", game_index);
+
+      pthread_cond_signal(&games[game_index].game_ready);
+      pthread_mutex_unlock(&games[game_index].mutex);
+      game_status->code = game_index;
+      return SOAP_OK;
+    } else
+      pthread_mutex_unlock(&games[game_index].mutex);
   }
-
-  // Check if the player name is already registered in the game
-  if (checkPlayer(playerName.msg, game_index)) {
-    if (DEBUG_SERVER)
-      printf("[Register] Player %s is already registered in game %d\n", playerName.msg, game_index);
-    game_status->code = ERROR_PLAYER_REPEATED;
-    return SOAP_OK;
-  }
-
-  // Register the player
-  if (strlen(games[game_index].player1Name) == 0) {
-    strncpy(games[game_index].player1Name, playerName.msg, playerName.__size);
-    games[game_index].player1Name[playerName.__size] = '\0';
-    games[game_index].status = gameWaitingPlayer;
-
-    if (DEBUG_SERVER)
-      printf(
-        "[Register] Player %s registered in game %d\n", games[game_index].player1Name, game_index);
-
-  } else if (strlen(games[game_index].player2Name) == 0) {
-    strncpy(games[game_index].player2Name, playerName.msg, playerName.__size);
-    games[game_index].player2Name[playerName.__size] = '\0';
-    games[game_index].status = gameWaitingPlayer;
-
-    if (DEBUG_SERVER)
-      printf(
-        "[Register] Player %s registered in game %d\n", games[game_index].player2Name, game_index);
-  }
-
-  // Check if the game is ready to start
-  if (strlen(games[game_index].player1Name) > 0 && strlen(games[game_index].player2Name) > 0) {
-    games[game_index].status = gameReady;
-    if (DEBUG_SERVER)
-      printf("[Register] Game %d is ready to start\n", game_index);
-  }
-
-  pthread_mutex_unlock(&mutex_games);
-
-  game_status->code = game_index;
-
-  return SOAP_OK;
 }
 
 int
@@ -260,7 +279,6 @@ main(int argc, char** argv)
   soap.max_keep_alive = 100;  // max keep-alive sequence
 
   initServerStructures();
-  pthread_mutex_init(&mutex_games, NULL);
 
   // Get listening port
   port = atoi(argv[1]);
