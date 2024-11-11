@@ -111,17 +111,15 @@ main(int argc, char** argv)
     player_name.msg[strlen(player_name.msg) - 1] = 0;
     player_name.__size = strlen(player_name.msg);
 
-    res_code = soap_call_conecta4ns__register(&soap, server_url, "", player_name, &game_status);
+    res_code = soap_call_conecta4ns__register(&soap, server_url, "", player_name, &game_id);
 
-    if (game_status.code == ERROR_SERVER_FULL) {
+    if (game_id == ERROR_SERVER_FULL) {
       printf("Server is full. Try again later.\n");
       exit(1);
-    } else if (game_status.code == ERROR_PLAYER_REPEATED) {
+    } else if (game_id == ERROR_PLAYER_REPEATED) {
       printf("Player %s is already registered. Try with a different name.\n", player_name.msg);
     }
-  } while (game_status.code == ERROR_PLAYER_REPEATED);
-
-  game_id = game_status.code;
+  } while (game_id == ERROR_PLAYER_REPEATED);
 
   printf("Connected to server. Game ID: %d\n", game_id);
 

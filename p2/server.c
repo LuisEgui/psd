@@ -151,9 +151,7 @@ copyGameStatusStructure(conecta4ns__tBlock* status, char* message, xsd__string b
 }
 
 int
-conecta4ns__register(struct soap* soap,
-                     conecta4ns__tMessage playerName,
-                     conecta4ns__tBlock* game_status)
+conecta4ns__register(struct soap* soap, conecta4ns__tMessage playerName, int* code)
 {
   while (1) {
     int game_index = -1;
@@ -169,7 +167,7 @@ conecta4ns__register(struct soap* soap,
     if (game_index == ERROR_SERVER_FULL) {
       if (DEBUG_SERVER)
         printf("[Register] Server is full\n");
-      game_status->code = ERROR_SERVER_FULL;
+      *code = ERROR_SERVER_FULL;
       return SOAP_OK;
     }
 
@@ -178,7 +176,7 @@ conecta4ns__register(struct soap* soap,
       if (DEBUG_SERVER)
         printf(
           "[Register] Player %s is already registered in game %d\n", playerName.msg, game_index);
-      game_status->code = ERROR_PLAYER_REPEATED;
+      *code = ERROR_PLAYER_REPEATED;
       return SOAP_OK;
     }
 
@@ -198,7 +196,7 @@ conecta4ns__register(struct soap* soap,
 
       pthread_cond_wait(&games[game_index].game_ready, &games[game_index].mutex);
       pthread_mutex_unlock(&games[game_index].mutex);
-      game_status->code = game_index;
+      *code = game_index;
       return SOAP_OK;
 
     } else if (is_waiting_player(game_index)) {
@@ -218,7 +216,7 @@ conecta4ns__register(struct soap* soap,
 
       pthread_cond_signal(&games[game_index].game_ready);
       pthread_mutex_unlock(&games[game_index].mutex);
-      game_status->code = game_index;
+      *code = game_index;
       return SOAP_OK;
     } else
       pthread_mutex_unlock(&games[game_index].mutex);
@@ -242,6 +240,13 @@ conecta4ns__getStatus(struct soap* soap,
            playerName.msg,
            playerName.__size,
            gameId);
+
+  if (gameId < 0 || gameId >= MAX_GAMES) {
+    if (DEBUG_SERVER)
+      printf("[GetStatus] Game %d does not exist\n", gameId);
+    copyGameStatusStructure(status, "Wrong ID. Game does not exist", NULL, ERROR_WRONG_GAMEID);
+    return SOAP_OK;
+  }
 
   return SOAP_OK;
 }
