@@ -138,8 +138,9 @@ copyGameStatusStructure(conecta4ns__tBlock* status, char* message, xsd__string b
 
   // Copy the message
   memset((status->msgStruct).msg, 0, STRING_LENGTH);
-  strcpy((status->msgStruct).msg, message);
-  (status->msgStruct).__size = strlen((status->msgStruct).msg);
+  strncpy((status->msgStruct).msg, message, strlen(message) + 1);
+  (status->msgStruct).__size = strlen((status->msgStruct).msg) + 1;
+  (status->msgStruct).msg[(status->msgStruct).__size - 1] = '\0';
 
   // Copy the board, only if it is not NULL
   if (board == NULL) {
@@ -233,24 +234,27 @@ conecta4ns__register(struct soap* soap, conecta4ns__tMessage playerName, int* co
 void
 handleGameOver(int gameId, conecta4ns__tMessage playerName, char* message_to_player, int* code)
 {
-  // Check the winner
+  // Check if there's a winner
   if (checkWinner(games[gameId].board, games[gameId].current_player)) {
-    // Determine the message based on the current player
-    if ((games[gameId].current_player == player1 &&
-         strncmp(games[gameId].player1_name, playerName.msg, playerName.__size) == 0) ||
-        (games[gameId].current_player == player2 &&
-         strncmp(games[gameId].player2_name, playerName.msg, playerName.__size) == 0)) {
-      strncpy(message_to_player, "Congratulations, you won!", STRING_LENGTH - 1);
-      *code = GAMEOVER_WIN;
-    } else {
-      strncpy(message_to_player, "You lose! Better luck next time!", STRING_LENGTH - 1);
-      *code = GAMEOVER_LOSE;
-    }
+    // Current player is the winner
+    if (DEBUG_SERVER)
+      printf("[GameOver] Player %s wins game %d\n", playerName.msg, gameId);
+    strncpy(message_to_player, "Congratulations, you won!", STRING_LENGTH - 1);
+    *code = GAMEOVER_WIN;
   } else if (isBoardFull(games[gameId].board)) {
+    // No winner and the board is full, so it's a tie
+    if (DEBUG_SERVER)
+      printf("[GameOver] Game %d is a tie\n", gameId);
     strncpy(message_to_player, "Game over. It's a tie!", STRING_LENGTH - 1);
     *code = GAMEOVER_DRAW;
+  } else {
+    // This player lost
+    if (DEBUG_SERVER)
+      printf("[GameOver] Player %s loses game %d\n", playerName.msg, gameId);
+    strncpy(message_to_player, "You lose! Better luck next time!", STRING_LENGTH - 1);
+    *code = GAMEOVER_LOSE;
   }
-  message_to_player[STRING_LENGTH - 1] = '\0';
+  message_to_player[STRING_LENGTH - 1] = '\0'; // Ensure the message is null-terminated
 }
 
 void
@@ -323,14 +327,93 @@ conecta4ns__getStatus(struct soap* soap,
 
   // Check if the game is over
   if (games[gameId].end_of_game) {
+    if (DEBUG_SERVER)
+      printf("[GetStatus] Game %d is over\n", gameId);
     handleGameOver(gameId, playerName, message_to_player, &code);
+    copyGameStatusStructure(status, message_to_player, games[gameId].board, code);
+    games[gameId].current_player = switchPlayer(games[gameId].current_player);
+    pthread_cond_signal(&games[gameId].turn);
   } else {
+    if (DEBUG_SERVER)
+      printf("[GetStatus] Sending status to player %s in game %d\n", playerName.msg, gameId);
     handleTurn(gameId, playerName, message_to_player, &code);
+    copyGameStatusStructure(status, message_to_player, games[gameId].board, code);
+    pthread_cond_signal(&games[gameId].turn);
   }
 
-  copyGameStatusStructure(status, message_to_player, games[gameId].board, code);
   pthread_mutex_unlock(&games[gameId].mutex);
 
+  return SOAP_OK;
+}
+
+int
+conecta4ns__insertChip(struct soap* soap,
+                       conecta4ns__tMessage playerName,
+                       int gameId,
+                       int column,
+                       conecta4ns__tBlock* status)
+{
+  char message_to_player[STRING_LENGTH];
+  int code;
+
+  // Set \0 at the end of the string and alloc memory for the status
+  playerName.msg[playerName.__size] = 0;
+  allocClearBlock(soap, status);
+
+  // Check if the game exists
+  if (gameId < 0 || gameId >= MAX_GAMES) {
+    if (DEBUG_SERVER)
+      printf("[InsertChip] Game %d does not exist\n", gameId);
+    copyGameStatusStructure(status, "Wrong ID. Game does not exist", NULL, ERROR_WRONG_GAMEID);
+    return SOAP_OK;
+  }
+
+  // Check if the player is registered in the game
+  if (checkPlayer(playerName.msg, gameId) == FALSE) {
+    if (DEBUG_SERVER)
+      printf("[InsertChip] Player %s is not registered in game %d\n", playerName.msg, gameId);
+    copyGameStatusStructure(status, "Player not found", NULL, ERROR_PLAYER_NOT_FOUND);
+    return SOAP_OK;
+  }
+
+  pthread_mutex_lock(&games[gameId].mutex);
+
+  // Check the player's move
+  if (checkMove(games[gameId].board, column) == INVALID_MOVE_FULL_COLUMN) {
+    if (DEBUG_SERVER)
+      printf("[InsertChip] Invalid move from player %s in game %d\n", playerName.msg, gameId);
+    copyGameStatusStructure(status, "Column is full, try another column", NULL, ERROR_INVALID_MOVE);
+    pthread_mutex_unlock(&games[gameId].mutex);
+    return SOAP_OK;
+  }
+
+  // Insert the chip
+  insertChip(games[gameId].board, games[gameId].current_player, column);
+
+  if (DEBUG_SERVER) {
+    char player_chip = getPlayerChip(games[gameId].current_player);
+    printf("[InsertChip] Player %s inserted chip %c in column %d in game %d\n",
+           playerName.msg,
+           player_chip,
+           column,
+           gameId);
+  }
+
+  // Check if the game is over
+  if (checkWinner(games[gameId].board, games[gameId].current_player) ||
+      isBoardFull(games[gameId].board)) {
+    if (DEBUG_SERVER)
+      printf("[InsertChip] Game %d is over\n", gameId);
+    games[gameId].end_of_game = TRUE;
+    pthread_cond_signal(&games[gameId].turn);
+  } else {
+    if (DEBUG_SERVER)
+      printf("[InsertChip] Player %s's turn in game %d\n", playerName.msg, gameId);
+    games[gameId].current_player = switchPlayer(games[gameId].current_player);
+    pthread_cond_signal(&games[gameId].turn);
+  }
+
+  pthread_mutex_unlock(&games[gameId].mutex);
   return SOAP_OK;
 }
 

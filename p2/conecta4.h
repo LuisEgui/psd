@@ -16,6 +16,9 @@
 /** Player not found */
 #define ERROR_PLAYER_REPEATED -4000
 
+/** Invalid move */
+#define ERROR_INVALID_MOVE -5000
+
 /** Code for performing a move */
 #define TURN_MOVE 70001
 
@@ -65,8 +68,8 @@ typedef enum players
 /** Result for moves */
 typedef enum moves
 {
-  OK_move,
-  fullColumn_move
+  OK_MOVE,
+  INVALID_MOVE_FULL_COLUMN
 } conecta4ns__tMove;
 
 /** Dynamic array of chars */
@@ -92,3 +95,9 @@ int
 conecta4ns__register(conecta4ns__tMessage playerName, int* code);
 int
 conecta4ns__getStatus(conecta4ns__tMessage playerName, int gameId, conecta4ns__tBlock* status);
+
+int
+conecta4ns__insertChip(conecta4ns__tMessage playerName,
+                       int gameId,
+                       int column,
+                       conecta4ns__tBlock* status);

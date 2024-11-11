@@ -1,5 +1,6 @@
 #include "client.h"
 #include "soapH.h"
+#include "soapStub.h"
 
 #define DEBUG_CLIENT 1
 
@@ -123,22 +124,42 @@ main(int argc, char** argv)
 
   printf("Connected to server. Game ID: %d\n", game_id);
 
-  // Get the status
-  res_code =
-    soap_call_conecta4ns__getStatus(&soap, server_url, "", player_name, game_id, &game_status);
+  while (end_of_game == FALSE) {
+    // Get the status from the server
+    res_code =
+      soap_call_conecta4ns__getStatus(&soap, server_url, "", player_name, game_id, &game_status);
 
-  if (res_code != SOAP_OK) {
-    soap_print_fault(&soap, stderr);
-    exit(1);
+    if (res_code != SOAP_OK) {
+      soap_print_fault(&soap, stderr);
+      exit(1);
+    }
+
+    // Print the board
+    printBoard(game_status.board, game_status.msgStruct.msg);
+
+    // Check if the game is over
+    if (game_status.code == GAMEOVER_WIN || game_status.code == GAMEOVER_DRAW ||
+        game_status.code == GAMEOVER_LOSE) {
+      end_of_game = TRUE;
+      break; // Exit the loop as the game is over
+    }
+
+    // Handle player turn, moves, etc., if game is still ongoing
+    if (game_status.code == TURN_MOVE) {
+      do {
+        player_move = readMove();
+
+        // Insert chip
+        res_code = soap_call_conecta4ns__insertChip(
+          &soap, server_url, "", player_name, game_id, player_move, &game_status);
+
+        if (res_code != SOAP_OK) {
+          soap_print_fault(&soap, stderr);
+          exit(1);
+        }
+      } while (game_status.code == ERROR_INVALID_MOVE);
+    }
   }
-
-  if (game_status.code == TURN_MOVE)
-    printf("It's your turn\n");
-  else if (game_status.code == TURN_WAIT)
-    printf("Your rival is thinking... please, wait!\n");
-
-  while (TRUE)
-    ;
 
   // Clean the environment
   soap_destroy(&soap);
