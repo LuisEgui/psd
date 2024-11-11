@@ -55,7 +55,7 @@ initServerStructures()
     memset(games[i].player2_name, 0, STRING_LENGTH);
 
     // Game status
-    games[i].endOfGame = FALSE;
+    games[i].end_of_game = FALSE;
     games[i].status = gameEmpty;
 
     // Init mutex and cond variable
