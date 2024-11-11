@@ -37,10 +37,10 @@ initServerStructures()
       games[i].current_player = player2;
 
     // Allocate and init player names
-    games[i].player1Name = (xsd__string)malloc(STRING_LENGTH);
+    games[i].player1_name = (xsd__string)malloc(STRING_LENGTH);
 
-    if (games[i].player1Name == NULL) {
-      perror("[Server init] Error allocating memory for player1Name\n");
+    if (games[i].player1_name == NULL) {
+      perror("[Server init] Error allocating memory for player1_name\n");
       exit(1);
     }
 
@@ -51,7 +51,7 @@ initServerStructures()
       exit(1);
     }
 
-    memset(games[i].player1Name, 0, STRING_LENGTH);
+    memset(games[i].player1_name, 0, STRING_LENGTH);
     memset(games[i].player2Name, 0, STRING_LENGTH);
 
     // Game status
@@ -103,7 +103,7 @@ checkPlayer(xsd__string playerName, int gameId)
   if (gameId < 0 || gameId >= MAX_GAMES)
     return FALSE;
 
-  if (strcmp(games[gameId].player1Name, playerName) == 0)
+  if (strcmp(games[gameId].player1_name, playerName) == 0)
     return TRUE;
 
   if (strcmp(games[gameId].player2Name, playerName) == 0)
@@ -122,7 +122,7 @@ freeGameByIndex(int index)
   free(games[index].board);
 
   // Free the player names
-  free(games[index].player1Name);
+  free(games[index].player1_name);
   free(games[index].player2Name);
 
   // Reset the game status
@@ -186,14 +186,14 @@ conecta4ns__register(struct soap* soap,
 
     // Register the player
     if (is_empty(game_index)) {
-      assert(strlen(games[game_index].player1Name) == 0);
-      strncpy(games[game_index].player1Name, playerName.msg, playerName.__size);
-      games[game_index].player1Name[playerName.__size] = '\0';
+      assert(strlen(games[game_index].player1_name) == 0);
+      strncpy(games[game_index].player1_name, playerName.msg, playerName.__size);
+      games[game_index].player1_name[playerName.__size] = '\0';
       games[game_index].status = gameWaitingPlayer;
 
       if (DEBUG_SERVER)
         printf("[Register] Player %s registered in game %d\n",
-               games[game_index].player1Name,
+               games[game_index].player1_name,
                game_index);
 
       pthread_cond_wait(&games[game_index].game_ready, &games[game_index].mutex);

@@ -21,7 +21,7 @@ typedef struct game
 {
   xsd__string board;                 /** Board of the game */
   conecta4ns__tPlayer current_player; /** Current player */
-  xsd__string player1Name;           /** Name of player 1 */
+  xsd__string player1_name;           /** Name of player 1 */
   xsd__string player2Name;           /** Name of player 2 */
   int endOfGame;                     /** Flag to control the end of the game*/
   tGameState status;                 /** Flag to indicate the status of this game */
