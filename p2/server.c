@@ -32,9 +32,9 @@ initServerStructures()
 
     // Calculate the first player to play
     if ((rand() % 2) == 0)
-      games[i].currentPlayer = player1;
+      games[i].current_player = player1;
     else
-      games[i].currentPlayer = player2;
+      games[i].current_player = player2;
 
     // Allocate and init player names
     games[i].player1Name = (xsd__string)malloc(STRING_LENGTH);
@@ -65,9 +65,9 @@ initServerStructures()
 }
 
 conecta4ns__tPlayer
-switchPlayer(conecta4ns__tPlayer currentPlayer)
+switchPlayer(conecta4ns__tPlayer current_player)
 {
-  return (currentPlayer == player1) ? player2 : player1;
+  return (current_player == player1) ? player2 : player1;
 }
 
 int
