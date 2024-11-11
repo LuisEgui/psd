@@ -14,10 +14,10 @@ conecta4ns__tMove
 checkMove(xsd__string board, unsigned int column)
 {
 
-  conecta4ns__tMove move = OK_move;
+  conecta4ns__tMove move = OK_MOVE;
 
   if (board[(BOARD_WIDTH * (BOARD_HEIGHT - 1)) + column] != EMPTY_CELL)
-    move = fullColumn_move;
+    move = INVALID_MOVE_FULL_COLUMN;
 
   return move;
 }
