@@ -121,7 +121,9 @@ main(int argc, char** argv)
     }
   } while (game_status.code == ERROR_PLAYER_REPEATED);
 
-  printf("Connected to server. Game ID: %d\n", game_status.code);
+  game_id = game_status.code;
+
+  printf("Connected to server. Game ID: %d\n", game_id);
 
   while (TRUE)
     ;
