@@ -10,10 +10,10 @@ soapC.c:
 	soapcpp2 -b -c conecta4.h
 
 client:
-	gcc $(SSL_FLAGS) -o client client.c soapC.c soapClient.c game.c -lgsoap $(SSL_LIBS) -L$(GSOAP_LIB) -I$(GSOAP_INCLUDE)
+	gcc $(SSL_FLAGS) -o client client.c soapC.c soapClient.c game.c -lgsoap -g $(SSL_LIBS) -L$(GSOAP_LIB) -I$(GSOAP_INCLUDE)
 
 server:	
-	gcc $(SSL_FLAGS) -o server server.c soapC.c soapServer.c game.c -lgsoap -lpthread $(SSL_LIBS) -L$(GSOAP_LIB) -I$(GSOAP_INCLUDE)
+	gcc $(SSL_FLAGS) -o server server.c soapC.c soapServer.c game.c -lgsoap -g -lpthread $(SSL_LIBS) -L$(GSOAP_LIB) -I$(GSOAP_INCLUDE)
 
 
 clean:	
