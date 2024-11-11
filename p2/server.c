@@ -126,7 +126,42 @@ freeGameByIndex(int index)
   free(games[index].player1_name);
   free(games[index].player2_name);
 
-  // Reset the game status
+  // Allocate and init board
+  games[index].board = (xsd__string)malloc(BOARD_WIDTH * BOARD_HEIGHT);
+
+  if (games[index].board == NULL) {
+    perror("[Game reset] Error allocating memory for board\n");
+    exit(1);
+  }
+
+  initBoard(games[index].board);
+
+  // Calculate the first player to play
+  if ((rand() % 2) == 0)
+    games[index].current_player = player1;
+  else
+    games[index].current_player = player2;
+
+  // Allocate and init player names
+  games[index].player1_name = (xsd__string)malloc(STRING_LENGTH);
+
+  if (games[index].player1_name == NULL) {
+    perror("[Server init] Error allocating memory for player1_name\n");
+    exit(1);
+  }
+
+  games[index].player2_name = (xsd__string)malloc(STRING_LENGTH);
+
+  if (games[index].player2_name == NULL) {
+    perror("[Server init] Error allocating memory for player2_name\n");
+    exit(1);
+  }
+
+  memset(games[index].player1_name, 0, STRING_LENGTH);
+  memset(games[index].player2_name, 0, STRING_LENGTH);
+
+  // Game status
+  games[index].end_of_game = FALSE;
   games[index].status = EMPTY;
 }
 
@@ -333,6 +368,12 @@ conecta4ns__getStatus(struct soap* soap,
     copyGameStatusStructure(status, message_to_player, games[gameId].board, code);
     games[gameId].current_player = switchPlayer(games[gameId].current_player);
     pthread_cond_signal(&games[gameId].turn);
+
+    games[gameId].game_over_acks++;
+
+    if (games[gameId].game_over_acks == 2)
+      freeGameByIndex(gameId);
+
   } else {
     if (DEBUG_SERVER)
       printf("[GetStatus] Sending status to player %s in game %d\n", playerName.msg, gameId);

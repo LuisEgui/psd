@@ -28,6 +28,7 @@ typedef struct game
   pthread_mutex_t mutex;              /** Mutex to protect the game status field */
   pthread_cond_t game_ready;          /** Condition variable to signal that the game is ready */
   pthread_cond_t turn;                /** Condition variable to signal that the turn has changed */
+  int game_over_acks; /** Number of players that have received the game over message */
 } tGame;
 
 /**
