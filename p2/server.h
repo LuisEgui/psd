@@ -9,9 +9,9 @@
 /** Type for game status */
 typedef enum
 {
-  gameEmpty,
-  gameWaitingPlayer,
-  gameReady
+  EMPTY,
+  WAITING_FOR_PLAYER,
+  READY
 } tGameState;
 
 /**

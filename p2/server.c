@@ -56,7 +56,7 @@ initServerStructures()
 
     // Game status
     games[i].end_of_game = FALSE;
-    games[i].status = gameEmpty;
+    games[i].status = EMPTY;
 
     // Init mutex and cond variable
     pthread_mutex_init(&games[i].mutex, NULL);
@@ -73,13 +73,13 @@ switchPlayer(conecta4ns__tPlayer current_player)
 int
 is_empty(int game_id)
 {
-  return games[game_id].status == gameEmpty;
+  return games[game_id].status == EMPTY;
 }
 
 int
 is_waiting_player(int game_id)
 {
-  return games[game_id].status == gameWaitingPlayer;
+  return games[game_id].status == WAITING_FOR_PLAYER;
 }
 
 int
@@ -126,7 +126,7 @@ freeGameByIndex(int index)
   free(games[index].player2_name);
 
   // Reset the game status
-  games[index].status = gameEmpty;
+  games[index].status = EMPTY;
 }
 
 void
@@ -189,7 +189,7 @@ conecta4ns__register(struct soap* soap,
       assert(strlen(games[game_index].player1_name) == 0);
       strncpy(games[game_index].player1_name, playerName.msg, playerName.__size);
       games[game_index].player1_name[playerName.__size] = '\0';
-      games[game_index].status = gameWaitingPlayer;
+      games[game_index].status = WAITING_FOR_PLAYER;
 
       if (DEBUG_SERVER)
         printf("[Register] Player %s registered in game %d\n",
@@ -211,7 +211,7 @@ conecta4ns__register(struct soap* soap,
                games[game_index].player2_name,
                game_index);
 
-      games[game_index].status = gameReady;
+      games[game_index].status = READY;
 
       if (DEBUG_SERVER)
         printf("[Register] Game %d is ready to start\n", game_index);
