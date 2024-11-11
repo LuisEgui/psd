@@ -27,6 +27,7 @@ typedef struct game
   tGameState status;                  /** Flag to indicate the status of this game */
   pthread_mutex_t mutex;              /** Mutex to protect the game status field */
   pthread_cond_t game_ready;          /** Condition variable to signal that the game is ready */
+  pthread_cond_t turn;                /** Condition variable to signal that the turn has changed */
 } tGame;
 
 /**
@@ -96,6 +97,31 @@ freeGameByIndex(int index);
  */
 void
 copyGameStatusStructure(conecta4ns__tBlock* status, char* message, xsd__string board, int newCode);
+
+/**
+ * Get the chip of the player
+ * @param current_player Current player
+ * @return Chip of the player
+ */
+char
+getPlayerChip(conecta4ns__tPlayer current_player);
+
+/**
+ * Handle the game over
+ * @param gameId ID of the game
+ * @param playerName Name of the player
+ * @param message_to_player Message to be sent to the player
+ * @param code Code to be sent to the player
+ */
+void
+handleGameOver(int gameId, conecta4ns__tMessage playerName, char* message_to_player, int* code);
+
+/**
+ * Handle the turn of the player
+ * @param gameId ID of the game
+ * @param playerName Name of the player
+void
+handleTurn(int gameId, conecta4ns__tMessage playerName, char* message_to_player, int* code);
 
 /**
  * Thread function to process client requests

@@ -123,6 +123,20 @@ main(int argc, char** argv)
 
   printf("Connected to server. Game ID: %d\n", game_id);
 
+  // Get the status
+  res_code =
+    soap_call_conecta4ns__getStatus(&soap, server_url, "", player_name, game_id, &game_status);
+
+  if (res_code != SOAP_OK) {
+    soap_print_fault(&soap, stderr);
+    exit(1);
+  }
+
+  if (game_status.code == TURN_MOVE)
+    printf("It's your turn\n");
+  else if (game_status.code == TURN_WAIT)
+    printf("Your rival is thinking... please, wait!\n");
+
   while (TRUE)
     ;
 

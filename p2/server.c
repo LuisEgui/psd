@@ -1,4 +1,5 @@
 #include "server.h"
+#include "game.h"
 #include "soapStub.h"
 #include <assert.h>
 
@@ -150,6 +151,12 @@ copyGameStatusStructure(conecta4ns__tBlock* status, char* message, xsd__string b
   }
 }
 
+char
+getPlayerChip(conecta4ns__tPlayer current_player)
+{
+  return current_player == player1 ? PLAYER_1_CHIP : PLAYER_2_CHIP;
+}
+
 int
 conecta4ns__register(struct soap* soap, conecta4ns__tMessage playerName, int* code)
 {
@@ -223,13 +230,60 @@ conecta4ns__register(struct soap* soap, conecta4ns__tMessage playerName, int* co
   }
 }
 
+void
+handleGameOver(int gameId, conecta4ns__tMessage playerName, char* message_to_player, int* code)
+{
+  // Check the winner
+  if (checkWinner(games[gameId].board, games[gameId].current_player)) {
+    // Determine the message based on the current player
+    if ((games[gameId].current_player == player1 &&
+         strncmp(games[gameId].player1_name, playerName.msg, playerName.__size) == 0) ||
+        (games[gameId].current_player == player2 &&
+         strncmp(games[gameId].player2_name, playerName.msg, playerName.__size) == 0)) {
+      strncpy(message_to_player, "Congratulations, you won!", STRING_LENGTH - 1);
+      *code = GAMEOVER_WIN;
+    } else {
+      strncpy(message_to_player, "You lose! Better luck next time!", STRING_LENGTH - 1);
+      *code = GAMEOVER_LOSE;
+    }
+  } else if (isBoardFull(games[gameId].board)) {
+    strncpy(message_to_player, "Game over. It's a tie!", STRING_LENGTH - 1);
+    *code = GAMEOVER_DRAW;
+  }
+  message_to_player[STRING_LENGTH - 1] = '\0';
+}
+
+void
+handleTurn(int gameId, conecta4ns__tMessage playerName, char* message_to_player, int* code)
+{
+  conecta4ns__tPlayer current_player = games[gameId].current_player;
+  char player_chip = getPlayerChip(current_player);
+
+  if ((current_player == player1 &&
+       strncmp(games[gameId].player1_name, playerName.msg, playerName.__size) == 0) ||
+      (current_player == player2 &&
+       strncmp(games[gameId].player2_name, playerName.msg, playerName.__size) == 0)) {
+    snprintf(message_to_player, STRING_LENGTH, "It's your turn, you play with: %c", player_chip);
+    *code = TURN_MOVE;
+  } else {
+    snprintf(message_to_player,
+             STRING_LENGTH,
+             "Your rival is thinking... please, wait! You play with: %c",
+             player_chip);
+    *code = TURN_WAIT;
+  }
+
+  message_to_player[STRING_LENGTH - 1] = '\0';
+}
+
 int
 conecta4ns__getStatus(struct soap* soap,
                       conecta4ns__tMessage playerName,
                       int gameId,
                       conecta4ns__tBlock* status)
 {
-  char messageToPlayer[STRING_LENGTH];
+  char message_to_player[STRING_LENGTH];
+  int code;
 
   // Set \0 at the end of the string and alloc memory for the status
   playerName.msg[playerName.__size] = 0;
@@ -241,12 +295,41 @@ conecta4ns__getStatus(struct soap* soap,
            playerName.__size,
            gameId);
 
+  // Check if the game exists
   if (gameId < 0 || gameId >= MAX_GAMES) {
     if (DEBUG_SERVER)
       printf("[GetStatus] Game %d does not exist\n", gameId);
     copyGameStatusStructure(status, "Wrong ID. Game does not exist", NULL, ERROR_WRONG_GAMEID);
     return SOAP_OK;
   }
+
+  // Check if the player is registered in the game
+  if (checkPlayer(playerName.msg, gameId) == FALSE) {
+    if (DEBUG_SERVER)
+      printf("[GetStatus] Player %s is not registered in game %d\n", playerName.msg, gameId);
+    copyGameStatusStructure(status, "Player not found", NULL, ERROR_PLAYER_NOT_FOUND);
+    return SOAP_OK;
+  }
+
+  pthread_mutex_lock(&games[gameId].mutex);
+
+  // If it's not the player's turn, wait
+  while ((strcmp(games[gameId].player1_name, playerName.msg) == 0 &&
+          games[gameId].current_player != player1) || // Player 1
+         (strcmp(games[gameId].player2_name, playerName.msg) == 0 &&
+          games[gameId].current_player != player2)) { // Player 2
+    pthread_cond_wait(&games[gameId].turn, &games[gameId].mutex);
+  }
+
+  // Check if the game is over
+  if (games[gameId].end_of_game) {
+    handleGameOver(gameId, playerName, message_to_player, &code);
+  } else {
+    handleTurn(gameId, playerName, message_to_player, &code);
+  }
+
+  copyGameStatusStructure(status, message_to_player, games[gameId].board, code);
+  pthread_mutex_unlock(&games[gameId].mutex);
 
   return SOAP_OK;
 }
