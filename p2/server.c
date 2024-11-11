@@ -44,15 +44,15 @@ initServerStructures()
       exit(1);
     }
 
-    games[i].player2Name = (xsd__string)malloc(STRING_LENGTH);
+    games[i].player2_name = (xsd__string)malloc(STRING_LENGTH);
 
-    if (games[i].player2Name == NULL) {
-      perror("[Server init] Error allocating memory for player2Name\n");
+    if (games[i].player2_name == NULL) {
+      perror("[Server init] Error allocating memory for player2_name\n");
       exit(1);
     }
 
     memset(games[i].player1_name, 0, STRING_LENGTH);
-    memset(games[i].player2Name, 0, STRING_LENGTH);
+    memset(games[i].player2_name, 0, STRING_LENGTH);
 
     // Game status
     games[i].endOfGame = FALSE;
@@ -106,7 +106,7 @@ checkPlayer(xsd__string playerName, int gameId)
   if (strcmp(games[gameId].player1_name, playerName) == 0)
     return TRUE;
 
-  if (strcmp(games[gameId].player2Name, playerName) == 0)
+  if (strcmp(games[gameId].player2_name, playerName) == 0)
     return TRUE;
 
   return FALSE;
@@ -123,7 +123,7 @@ freeGameByIndex(int index)
 
   // Free the player names
   free(games[index].player1_name);
-  free(games[index].player2Name);
+  free(games[index].player2_name);
 
   // Reset the game status
   games[index].status = gameEmpty;
@@ -202,13 +202,13 @@ conecta4ns__register(struct soap* soap,
       return SOAP_OK;
 
     } else if (is_waiting_player(game_index)) {
-      assert(strlen(games[game_index].player2Name) == 0);
-      strncpy(games[game_index].player2Name, playerName.msg, playerName.__size);
-      games[game_index].player2Name[playerName.__size] = '\0';
+      assert(strlen(games[game_index].player2_name) == 0);
+      strncpy(games[game_index].player2_name, playerName.msg, playerName.__size);
+      games[game_index].player2_name[playerName.__size] = '\0';
 
       if (DEBUG_SERVER)
         printf("[Register] Player %s registered in game %d\n",
-               games[game_index].player2Name,
+               games[game_index].player2_name,
                game_index);
 
       games[game_index].status = gameReady;

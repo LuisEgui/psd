@@ -19,14 +19,14 @@ typedef enum
  */
 typedef struct game
 {
-  xsd__string board;                 /** Board of the game */
+  xsd__string board;                  /** Board of the game */
   conecta4ns__tPlayer current_player; /** Current player */
   xsd__string player1_name;           /** Name of player 1 */
-  xsd__string player2Name;           /** Name of player 2 */
-  int endOfGame;                     /** Flag to control the end of the game*/
-  tGameState status;                 /** Flag to indicate the status of this game */
-  pthread_mutex_t mutex;             /** Mutex to protect the game status field */
-  pthread_cond_t game_ready;         /** Condition variable to signal that the game is ready */
+  xsd__string player2_name;           /** Name of player 2 */
+  int endOfGame;                      /** Flag to control the end of the game*/
+  tGameState status;                  /** Flag to indicate the status of this game */
+  pthread_mutex_t mutex;              /** Mutex to protect the game status field */
+  pthread_cond_t game_ready;          /** Condition variable to signal that the game is ready */
 } tGame;
 
 /**
