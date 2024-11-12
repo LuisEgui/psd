@@ -15,6 +15,14 @@ client:
 server:	
 	gcc $(SSL_FLAGS) -o server server.c soapC.c soapServer.c game.c -lgsoap -g -lpthread $(SSL_LIBS) -L$(GSOAP_LIB) -I$(GSOAP_INCLUDE)
 
+run_server:
+	./server 22500
+
+run_client:
+	./client http://localhost:22500
+
+memcheck_server:
+	valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes --verbose --log-file=valgrind.log ./server 22500
 
 clean:	
 	rm client server game.o *.xml *.nsmap *.wsdl *.xsd soapStub.h soapServerLib.* soapH.h soapServer.* soapClientLib.* soapClient.* soapC.* *.log
