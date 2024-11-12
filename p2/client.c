@@ -58,6 +58,7 @@ readMove()
              BOARD_WIDTH - 1);
   }
 
+  free(enteredMove);
   return move;
 }
 

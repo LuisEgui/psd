@@ -535,5 +535,6 @@ main(int argc, char** argv)
 
   // Detach SOAP environment
   soap_done(&soap);
+  pthread_exit(NULL);
   return 0;
 }
