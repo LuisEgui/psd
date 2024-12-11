@@ -95,3 +95,113 @@ calculate_lonely_cell()
   free(matrixB);
   free(matrixC);
 }
+
+unsigned short*
+get_top_row(unsigned short* world, int world_width, int world_height, int current_row)
+{
+  return (current_row == 0) ? world + (world_height - 1) * world_width
+                            : world + (current_row - 1) * world_width;
+}
+
+unsigned short*
+get_bottom_row(unsigned short* world, int world_width, int world_height, int current_row)
+{
+  return (current_row == world_height) ? world : world + (current_row * world_width);
+}
+
+void
+update_cell(tCoordinate* cell,
+            int world_width,
+            unsigned short* current_world,
+            unsigned short* next_world_state)
+{
+  int neighbours = 0;
+  tCoordinate* dest_cell = (tCoordinate*)malloc(sizeof(tCoordinate));
+
+  if (dest_cell == NULL) {
+    fprintf(stderr, "Memory allocation for dest_cell failed.\n");
+    exit(EXIT_FAILURE);
+  }
+
+  // Check up
+  get_cell_up(cell, dest_cell);
+
+  if (get_cell_at_world(dest_cell, current_world, world_width) == CELL_LIVE)
+    neighbours++;
+
+  // Check up-left
+  get_cell_left(cell, world_width, dest_cell);
+  get_cell_up(dest_cell, dest_cell);
+
+  if (get_cell_at_world(dest_cell, current_world, world_width) == CELL_LIVE)
+    neighbours++;
+
+  // Check right
+  get_cell_right(cell, world_width, dest_cell);
+
+  if (get_cell_at_world(dest_cell, current_world, world_width) == CELL_LIVE)
+    neighbours++;
+
+  // Check down-right
+  get_cell_right(cell, world_width, dest_cell);
+  get_cell_down(dest_cell, dest_cell);
+
+  if (get_cell_at_world(dest_cell, current_world, world_width) == CELL_LIVE)
+    neighbours++;
+
+  // Check down
+  get_cell_down(cell, dest_cell);
+
+  if (get_cell_at_world(dest_cell, current_world, world_width) == CELL_LIVE)
+    neighbours++;
+
+  // Check down-left
+  get_cell_left(cell, world_width, dest_cell);
+  get_cell_down(dest_cell, dest_cell);
+
+  if (get_cell_at_world(dest_cell, current_world, world_width) == CELL_LIVE)
+    neighbours++;
+
+  // Check left
+  get_cell_left(cell, world_width, dest_cell);
+
+  if (get_cell_at_world(dest_cell, current_world, world_width) == CELL_LIVE)
+    neighbours++;
+
+  // Check up-right
+  get_cell_right(cell, world_width, dest_cell);
+  get_cell_up(dest_cell, dest_cell);
+
+  if (get_cell_at_world(dest_cell, current_world, world_width) == CELL_LIVE)
+    neighbours++;
+
+  if (get_cell_at_world(cell, current_world, world_width) == CELL_LIVE && (neighbours == 0))
+    calculate_lonely_cell();
+
+  if (get_cell_at_world(cell, current_world, world_width) == CELL_LIVE && (neighbours == 2) ||
+      (neighbours == 3))
+    set_cell_at(cell, next_world_state, world_width, CELL_LIVE);
+  else if (get_cell_at_world(cell, current_world, world_width) == CELL_EMPTY && (neighbours == 3))
+    set_cell_at(cell, next_world_state, world_width, CELL_LIVE);
+  else
+    set_cell_at(cell, next_world_state, world_width, CELL_EMPTY);
+
+  free(dest_cell);
+}
+
+void
+compute_next_world_state(unsigned short* current_world,
+                         unsigned short* next_world_state,
+                         int world_width,
+                         int world_height)
+{
+  tCoordinate cell;
+
+  for (int row = 1; row < world_height - 1; row++) {
+    for (int col = 0; col < world_width; col++) {
+      cell.col = col;
+      cell.row = row;
+      update_cell(&cell, world_width, current_world, next_world_state);
+    }
+  }
+}

@@ -29,6 +29,20 @@
 // End processing
 #define END_PROCESSING -1
 
+// Distribution modes
+typedef enum
+{
+  STATIC,
+  DYNAMIC
+} tDistributionMode;
+
+// Execution modes
+typedef enum
+{
+  STEP,
+  AUTO
+} tExecutionMode;
+
 /** Matrix type */
 typedef int* tMatrix;
 

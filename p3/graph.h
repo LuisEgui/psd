@@ -1,5 +1,5 @@
 #include "world.h"
-#include <SDL.h>
+#include <SDL2/SDL.h>
 
 /**
  * Draws a cell in a renderer.

@@ -90,4 +90,22 @@ clear_world(unsigned short* w, int world_width, int world_height);
 void
 calculate_lonely_cell();
 
-#endif
+unsigned short*
+get_top_row(unsigned short* world, int world_width, int world_height, int current_row);
+
+unsigned short*
+get_bottom_row(unsigned short* world, int world_width, int world_height, int current_row);
+
+void
+update_cell(tCoordinate* cell,
+            int world_width,
+            unsigned short* current_world,
+            unsigned short* next_world_state);
+
+void
+compute_next_world_state(unsigned short* current_world,
+                         unsigned short* next_world_state,
+                         int world_width,
+                         int world_height);
+
+#endif // WORLD_H_INCLUDED
