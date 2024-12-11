@@ -201,7 +201,47 @@ compute_next_world_state(unsigned short* current_world,
     for (int col = 0; col < world_width; col++) {
       cell.col = col;
       cell.row = row;
-      update_cell(&cell, world_width, current_world, next_world_state);
+
+      // If the cell is affected by the cataclysm, set it to CELL_EMPTY
+      if (current_world[row * world_width + col] == CELL_CATACLYSM)
+        set_cell_at(&cell, next_world_state, world_width, CELL_EMPTY);
+      else
+        update_cell(&cell, world_width, current_world, next_world_state);
     }
+  }
+}
+
+void
+swap(unsigned short** world_a, unsigned short** world_b)
+{
+  unsigned short* tmp = *world_a;
+  *world_a = *world_b;
+  *world_b = tmp;
+}
+
+void
+cataclysm(unsigned short* world, int world_width, int world_height)
+{
+  int central_row = world_height / 2;
+  int central_col = world_width / 2;
+
+  // If the number of rows is even, choose the larger index
+  if (world_height % 2 == 0) {
+    central_row = (world_height / 2);
+  }
+
+  // If the number of columns is even, choose the larger index
+  if (world_width % 2 == 0) {
+    central_col = (world_width / 2);
+  }
+
+  // Set the central row to CELL_CATACLYSM in the current state of the world
+  for (int col = 0; col < world_width; col++) {
+    world[central_row * world_width + col] = CELL_CATACLYSM;
+  }
+
+  // Set the central column to CELL_CATACLYSM in the current state of the world
+  for (int row = 0; row < world_height; row++) {
+    world[row * world_width + central_col] = CELL_CATACLYSM;
   }
 }

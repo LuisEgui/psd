@@ -14,7 +14,7 @@
 #define INITIAL_CELLS_PERCENTAGE 30
 
 // Cell size (in pixels)
-#define CELL_SIZE 1
+#define CELL_SIZE 10
 
 // States of the cells
 #define CELL_LIVE 1
@@ -28,6 +28,10 @@
 
 // End processing
 #define END_PROCESSING -1
+
+// True
+#define TRUE 1
+#define FALSE 0
 
 // Distribution modes
 typedef enum

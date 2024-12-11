@@ -19,6 +19,7 @@
 /**
  * Master process.
  *
+ * @param total_processes Total number of processes.
  * @param world_width Width of the world.
  * @param world_height Height of the world.
  * @param iterations Number of iterations to be executed.
@@ -29,7 +30,8 @@
  * @param renderer SDL renderer to draw the world.
  */
 void
-master(int world_width,
+master(int total_processes,
+       int world_width,
        int world_height,
        int iterations,
        int execution_mode,

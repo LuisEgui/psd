@@ -90,22 +90,66 @@ clear_world(unsigned short* w, int world_width, int world_height);
 void
 calculate_lonely_cell();
 
+/**
+ * Returns the top row of the world.
+ *
+ * @param world World.
+ * @param world_width Width of the world.
+ * @param world_height Height of the world.
+ * @param current_row Current row.
+ */
 unsigned short*
 get_top_row(unsigned short* world, int world_width, int world_height, int current_row);
 
+/**
+ * Returns the bottom row of the world.
+ *
+ * @param world World.
+ * @param world_width Width of the world.
+ * @param world_height Height of the world.
+ * @param current_row Current row.
+ */
 unsigned short*
 get_bottom_row(unsigned short* world, int world_width, int world_height, int current_row);
 
+/**
+ * Updates the cell at the given coordinates.
+ *
+ * @param cell Cell to be updated.
+ * @param world_width Width of the world.
+ * @param current_world Current world state.
+ * @param next_world_state Next world state.
+ */
 void
 update_cell(tCoordinate* cell,
             int world_width,
             unsigned short* current_world,
             unsigned short* next_world_state);
 
+/**
+ * Computes the next world state.
+ *
+ * @param current_world Current world state.
+ * @param next_world_state Next world state.
+ * @param world_width Width of the world.
+ * @param world_height Height of the world.
+ */
 void
 compute_next_world_state(unsigned short* current_world,
                          unsigned short* next_world_state,
                          int world_width,
                          int world_height);
+
+/**
+ * Swaps the pointers of two worlds.
+ *
+ * @param world_a First world.
+ * @param world_b Second world.
+ */
+void
+swap(unsigned short** world_a, unsigned short** world_b);
+
+void
+cataclysm(unsigned short* world, int world_width, int world_height);
 
 #endif // WORLD_H_INCLUDED

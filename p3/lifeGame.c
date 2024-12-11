@@ -4,17 +4,6 @@
 #include "worker.h"
 #include <SDL2/SDL.h>
 
-unsigned short* world;
-unsigned short* world_send_buffer;
-unsigned short* world_recv_buffer;
-unsigned short* gather_world_buffer;
-int total_processes;
-int* send_counts;
-int recv_count;
-int* displs;
-int* recv_counts;
-int* rdispls;
-
 int
 main(int argc, char* argv[])
 {
@@ -136,7 +125,8 @@ main(int argc, char* argv[])
     start_time = MPI_Wtime();
 
     // Invoke the master subprogram
-    master(world_width,
+    master(size,
+           world_width,
            world_height,
            iterations,
            execution_mode,
@@ -149,12 +139,21 @@ main(int argc, char* argv[])
     end_time = MPI_Wtime();
     printf("Total execution time:%f seconds\n", end_time - start_time);
 
+    // Game over
+    printf("Game over!!! Press Enter to continue...\n");
+    getchar();
+    // Destroy window
+    SDL_DestroyWindow(window);
+    // Exit SDL
+    SDL_Quit();
   }
 
   // Workers
   else
     // Invoke the worker subprogram
     worker(world_height, world_width);
+
+  MPI_Finalize();
 
   return 0;
 }
