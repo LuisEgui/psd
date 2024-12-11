@@ -185,8 +185,6 @@ update_cell(tCoordinate* cell,
     set_cell_at(cell, next_world_state, world_width, CELL_LIVE);
   else
     set_cell_at(cell, next_world_state, world_width, CELL_EMPTY);
-
-  free(dest_cell);
 }
 
 void

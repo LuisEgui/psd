@@ -27,7 +27,7 @@
 #define MASTER 0
 
 // End processing
-#define END_PROCESSING -1
+#define END_PROCESSING 0
 
 // True
 #define TRUE 1

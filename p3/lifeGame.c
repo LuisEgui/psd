@@ -151,9 +151,14 @@ main(int argc, char* argv[])
   // Workers
   else
     // Invoke the worker subprogram
-    worker(world_height, world_width);
+    worker(world_width);
 
-  MPI_Finalize();
+  if (rank == MASTER) {
+    // Wait for all processes to finish
+    MPI_Barrier(MPI_COMM_WORLD);
+    // Finalize MPI
+    MPI_Finalize();
+  }
 
   return 0;
 }

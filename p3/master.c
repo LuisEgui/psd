@@ -70,9 +70,73 @@ master(int total_processes,
     }
 
     // Static case
-    if (distribution_mode == STATIC)
-      printf("Static case\n");
-    else
+    if (distribution_mode == STATIC) {
+      unsigned short n_rows = world_height / (total_processes - 1);
+      unsigned short index = 0;
+
+      // Distribute the workload between the workers
+      for (int i = 1; i < total_processes; i++, index += n_rows) {
+        if (i == (total_processes - 1))
+          n_rows += world_height % (total_processes - 1);
+
+        // Send the number of rows to each worker
+        MPI_Send(&n_rows, 1, MPI_UNSIGNED_SHORT, i, 0, MPI_COMM_WORLD);
+        // Send index to each worker
+        MPI_Send(&index, 1, MPI_UNSIGNED_SHORT, i, 0, MPI_COMM_WORLD);
+        // Send the top row to each worker
+        MPI_Send(get_top_row(world, world_width, world_height, index),
+                 world_width,
+                 MPI_UNSIGNED_SHORT,
+                 i,
+                 0,
+                 MPI_COMM_WORLD);
+        // Send effective working area to each worker
+        MPI_Send(world + (index * world_width),
+                 n_rows * world_width,
+                 MPI_UNSIGNED_SHORT,
+                 i,
+                 0,
+                 MPI_COMM_WORLD);
+        // Send the bottom row to each worker
+        MPI_Send(get_bottom_row(world, world_width, world_height, index + n_rows),
+                 world_width,
+                 MPI_UNSIGNED_SHORT,
+                 i,
+                 0,
+                 MPI_COMM_WORLD);
+      }
+
+      printf("Sent the workload to the workers\n");
+
+      MPI_Status status;
+      int rank;
+
+      // Receive the computed workload from each worker
+      for (int i = 1; i < total_processes; i++) {
+        // Receive the number of rows from each worker
+        MPI_Recv(&n_rows, 1, MPI_UNSIGNED_SHORT, MPI_ANY_SOURCE, 0, MPI_COMM_WORLD, &status);
+        rank = status.MPI_SOURCE;
+
+        // Receive index from each worker
+        MPI_Recv(&index, 1, MPI_UNSIGNED_SHORT, rank, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+
+        // Receive the effective working area from each worker
+        MPI_Recv(next_world_state + (index * world_width),
+                 n_rows * world_width,
+                 MPI_UNSIGNED_SHORT,
+                 rank,
+                 0,
+                 MPI_COMM_WORLD,
+                 MPI_STATUS_IGNORE);
+
+        // Draw the computed workload
+        draw_world(
+          world, next_world_state, renderer, index, index + n_rows, world_width, world_height);
+      }
+
+      printf("Received the computed workload from the workers\n");
+
+    } else if (distribution_mode == DYNAMIC)
       printf("Dynamic case\n");
 
     // Draw next world
@@ -88,11 +152,11 @@ master(int total_processes,
     clear_world(next_world_state, world_width, world_height);
   }
 
-  int end_processing = END_PROCESSING;
+  unsigned short n_rows = 0;
 
   // Send END_PROCESSING to all workers
   for (int i = 1; i < total_processes; i++)
-    MPI_Send(&end_processing, 1, MPI_UNSIGNED_SHORT, i, 0, MPI_COMM_WORLD);
+    MPI_Send(&n_rows, 1, MPI_UNSIGNED_SHORT, i, 0, MPI_COMM_WORLD);
 
   free(world);
   free(next_world_state);

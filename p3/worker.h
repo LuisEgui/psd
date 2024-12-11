@@ -8,4 +8,4 @@
 #define DEBUG_WORKER 0
 
 void
-worker(int world_height, int world_width);
+worker(int world_width);
