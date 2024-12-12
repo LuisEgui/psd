@@ -106,7 +106,7 @@ master(int total_processes,
                  MPI_COMM_WORLD);
       }
 
-      printf("Sent the workload to the workers\n");
+      // printf("Sent the workload to the workers\n");
 
       MPI_Status status;
       int rank;
@@ -134,10 +134,110 @@ master(int total_processes,
           world, next_world_state, renderer, index, index + n_rows, world_width, world_height);
       }
 
-      printf("Received the computed workload from the workers\n");
+      // printf("Received the computed workload from the workers\n");
 
-    } else if (distribution_mode == DYNAMIC)
-      printf("Dynamic case\n");
+    } else if (distribution_mode == DYNAMIC) {
+      unsigned short n_rows = grain_size;
+      unsigned short index = 0;
+      unsigned short n_rows_send = 0;
+      unsigned short n_rows_recv = 0;
+
+      // Distribute the workload between the workers dynamically
+      for (int i = 1; i < total_processes; i++, index += n_rows, n_rows_send += n_rows) {
+        // Send the number of rows to each worker
+        MPI_Send(&n_rows, 1, MPI_UNSIGNED_SHORT, i, 0, MPI_COMM_WORLD);
+
+        // Send index to each worker
+        MPI_Send(&index, 1, MPI_UNSIGNED_SHORT, i, 0, MPI_COMM_WORLD);
+
+        // Send the top row to each worker
+        MPI_Send(get_top_row(world, world_width, world_height, index),
+                 world_width,
+                 MPI_UNSIGNED_SHORT,
+                 i,
+                 0,
+                 MPI_COMM_WORLD);
+        // Send effective working area to each worker
+        MPI_Send(world + (index * world_width),
+                 n_rows * world_width,
+                 MPI_UNSIGNED_SHORT,
+                 i,
+                 0,
+                 MPI_COMM_WORLD);
+        // Send the bottom row to each worker
+        MPI_Send(get_bottom_row(world, world_width, world_height, index + n_rows),
+                 world_width,
+                 MPI_UNSIGNED_SHORT,
+                 i,
+                 0,
+                 MPI_COMM_WORLD);
+      }
+
+      MPI_Status status;
+      int rank;
+
+      // Receive the computed workload from each worker until there are no more rows to process
+      do {
+        // Receive the number of rows from each worker
+        MPI_Recv(&n_rows, 1, MPI_UNSIGNED_SHORT, MPI_ANY_SOURCE, 0, MPI_COMM_WORLD, &status);
+        rank = status.MPI_SOURCE;
+
+        // Receive index from each worker
+        MPI_Recv(&index, 1, MPI_UNSIGNED_SHORT, rank, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+
+        // Receive the effective working area from each worker
+        MPI_Recv(next_world_state + (index * world_width),
+                 n_rows * world_width,
+                 MPI_UNSIGNED_SHORT,
+                 rank,
+                 0,
+                 MPI_COMM_WORLD,
+                 MPI_STATUS_IGNORE);
+
+        // Draw the computed workload
+        draw_world(
+          world, next_world_state, renderer, index, index + n_rows, world_width, world_height);
+
+        n_rows_recv += n_rows;
+
+        if (n_rows_send < world_height) {
+
+          // Send leftover rows to the worker if there are less rows than the grain size
+          n_rows =
+            ((n_rows_send + grain_size) > world_height) ? world_height - n_rows_send : grain_size;
+
+          // Send the number of rows to each worker
+          MPI_Send(&n_rows, 1, MPI_UNSIGNED_SHORT, rank, 0, MPI_COMM_WORLD);
+
+          // Send index to each worker
+          MPI_Send(&n_rows_send, 1, MPI_UNSIGNED_SHORT, rank, 0, MPI_COMM_WORLD);
+
+          // Send the top row to each worker
+          MPI_Send(get_top_row(world, world_width, world_height, n_rows_send),
+                   world_width,
+                   MPI_UNSIGNED_SHORT,
+                   rank,
+                   0,
+                   MPI_COMM_WORLD);
+          // Send effective working area to each worker
+          MPI_Send(world + (n_rows_send * world_width),
+                   n_rows * world_width,
+                   MPI_UNSIGNED_SHORT,
+                   rank,
+                   0,
+                   MPI_COMM_WORLD);
+          // Send the bottom row to each worker
+          MPI_Send(get_bottom_row(world, world_width, world_height, n_rows_send + n_rows),
+                   world_width,
+                   MPI_UNSIGNED_SHORT,
+                   rank,
+                   0,
+                   MPI_COMM_WORLD);
+
+          n_rows_send += n_rows;
+        }
+      } while (n_rows_recv < world_height);
+    }
 
     // Draw next world
     SDL_RenderPresent(renderer);
