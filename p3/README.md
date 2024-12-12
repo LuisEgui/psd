@@ -4,6 +4,10 @@
 mpicc -o lifeGame *.c `sdl2-config --cflags --libs`
 ```
 
+```bash
+mpicc -o lifeGame *.c -I/usr/local/sdl2/include/SDL2 -L/usr/local/sdl2/lib/ -lSDL2
+```
+
 # Execute
 
 ```bash
