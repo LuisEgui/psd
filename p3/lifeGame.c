@@ -3,6 +3,9 @@
 #include "utils.h"
 #include "worker.h"
 #include <SDL2/SDL.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 int
 main(int argc, char* argv[])
@@ -59,7 +62,10 @@ main(int argc, char* argv[])
     wrong_usage(rank, "Wrong execution mode, please select [step|auto]\n", argv[0]);
 
   // Read input parameters
-  output_file = argv[5];
+  if (strcmp(argv[5], "null") == 0 || strcmp(argv[5], "NULL") == 0)
+    output_file = NULL;
+  else
+    output_file = argv[5];
 
   // Distribution mode
   if (strcmp(argv[6], "static") == 0 && argc == 7)
@@ -142,6 +148,12 @@ main(int argc, char* argv[])
     // Game over
     printf("Game over!!! Press Enter to continue...\n");
     getchar();
+
+    if (output_file != NULL) {
+      printf("Saving image to file [%s]\n", output_file);
+      save_image(renderer, output_file, world_width * CELL_SIZE, world_height * CELL_SIZE);
+    }
+
     // Destroy window
     SDL_DestroyWindow(window);
     // Exit SDL
